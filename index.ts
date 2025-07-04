@@ -1215,8 +1215,8 @@ cron.schedule('0 * * * *', async () => {
 
 app.use('/api/admin/trash', trashRoutes);
 
-// --- CRON JOB: Randomize buyer statuses every 2 minutes (for testing) ---
-cron.schedule('*/2 * * * *', async () => {
+// --- CRON JOB: Randomize buyer statuses every 2 hours ---
+cron.schedule('0 */2 * * *', async () => {
   try {
     await randomizeBuyerStatuses();
   } catch (err) {

@@ -30,6 +30,7 @@ import checkEmailRouter from './routes/checkEmail';
 import validateRouter from './routes/validate';
 import generateBuyersRouter from './routes/generateBuyers';
 import generateSellersRouter from './routes/generateSellers';
+import { randomizeBuyerStatuses } from './utils/randomizeBuyerStatuses';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -1213,6 +1214,15 @@ cron.schedule('0 * * * *', async () => {
 });
 
 app.use('/api/admin/trash', trashRoutes);
+
+// --- CRON JOB: Randomize buyer statuses every 2 minutes (for testing) ---
+cron.schedule('*/2 * * * *', async () => {
+  try {
+    await randomizeBuyerStatuses();
+  } catch (err) {
+    console.error('Error randomizing buyer statuses:', err);
+  }
+});
 
 // --- EMAIL STYLING UTILITY (PRO CENTERED EDITION - COMPACT HEADER) ---
 function getStyledEmailHtml(subject: string, body: string) {

@@ -34,6 +34,7 @@ import { randomizeBuyerStatuses } from './utils/randomizeBuyerStatuses';
 import { randomizeSellerStatuses } from './utils/randomizeSellerStatuses';
 import orderRoutes from './routes/order';
 import sellOrderRoutes from './routes/sellOrder';
+import Order from './models/Order';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -1379,6 +1380,43 @@ app.get('/api/admin/deposits', authenticateAdmin, async (req: Request, res: Resp
     res.json({ deposits });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch deposit requests' });
+  }
+});
+
+cron.schedule('*/1 * * * *', async () => {
+  try {
+    // Find all pending sell orders where autoCompleteAt is in the past
+    const pendingOrders = await Order.find({
+      type: 'sell',
+      status: 'pending',
+      autoCompleteAt: { $lte: new Date() }
+    });
+
+    for (const order of pendingOrders) {
+      const user = await User.findById(order.userId);
+      if (!user) continue;
+      if (user.spotBalance < order.spotAmount) continue;
+      user.spotBalance -= order.spotAmount;
+      user.usdtBalance += order.usdtAmount;
+      user.recentTransactions = user.recentTransactions || [];
+      user.recentTransactions.push({
+        type: 'P2P Sell',
+        amount: order.spotAmount,
+        currency: 'SPOT',
+        date: new Date(),
+        note: `Sold to ${order.sellerUsername || ''}`
+      });
+      await user.save();
+
+      order.status = 'completed';
+      order.completedAt = new Date();
+      await order.save();
+    }
+    if (pendingOrders.length) {
+      console.log(`[Auto-Complete Sell Orders] Completed ${pendingOrders.length} orders`);
+    }
+  } catch (err) {
+    console.error('[Auto-Complete Sell Orders] Error:', err);
   }
 });
 

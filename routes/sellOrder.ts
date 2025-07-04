@@ -27,7 +27,7 @@ function authenticateToken(req: any, res: Response, next: Function) {
 // Create a new order (Sell Spot)
 router.post('/sell-orders', authenticateToken, async (req: any, res: Response) => {
   try {
-    const { sellerId, sellerUsername, price, spotAmount, usdtAmount } = req.body;
+    const { buyerId, buyerUsername, sellerId, sellerUsername, price, spotAmount, usdtAmount } = req.body;
     const userId = req.user.userId;
     // Check user spot balance
     const user = await User.findById(userId);
@@ -41,6 +41,8 @@ router.post('/sell-orders', authenticateToken, async (req: any, res: Response) =
     const autoCompleteAt = new Date(Date.now() + randomMs);
     const order = await Order.create({
       userId,
+      buyerId,
+      buyerUsername,
       sellerId,
       sellerUsername,
       price,

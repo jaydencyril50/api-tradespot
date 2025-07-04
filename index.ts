@@ -31,6 +31,7 @@ import validateRouter from './routes/validate';
 import generateBuyersRouter from './routes/generateBuyers';
 import generateSellersRouter from './routes/generateSellers';
 import { randomizeBuyerStatuses } from './utils/randomizeBuyerStatuses';
+import orderRoutes from './routes/order'; // Add this import
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -169,6 +170,7 @@ app.use('/api', checkEmailRouter);
 app.use('/api', validateRouter);
 app.use('/api/p2p', generateBuyersRouter);
 app.use('/api/p2p', generateSellersRouter);
+app.use('/api/p2p', orderRoutes);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

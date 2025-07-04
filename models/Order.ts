@@ -4,6 +4,8 @@ const orderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // The user placing the order
   buyerId: { type: String, required: true }, // The fake buyer's userId
   buyerUsername: { type: String, required: true },
+  sellerId: { type: String }, // Optional, for sell orders
+  sellerUsername: { type: String }, // Optional, for sell orders
   price: { type: Number, required: true },
   spotAmount: { type: Number, required: true },
   usdtAmount: { type: Number, required: true },
@@ -12,6 +14,7 @@ const orderSchema = new mongoose.Schema({
   completedAt: { type: Date },
   // Add autoCompleteAt field for backend timing
   autoCompleteAt: { type: Date },
+  type: { type: String, enum: ['buy', 'sell'], default: 'buy' }, // Add type to distinguish order direction
 });
 
 export default mongoose.model('Order', orderSchema);

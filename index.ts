@@ -32,7 +32,8 @@ import generateBuyersRouter from './routes/generateBuyers';
 import generateSellersRouter from './routes/generateSellers';
 import { randomizeBuyerStatuses } from './utils/randomizeBuyerStatuses';
 import { randomizeSellerStatuses } from './utils/randomizeSellerStatuses';
-import orderRoutes from './routes/order'; // Add this import
+import orderRoutes from './routes/order';
+import sellOrderRoutes from './routes/sellOrder';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -172,6 +173,7 @@ app.use('/api', validateRouter);
 app.use('/api/p2p', generateBuyersRouter);
 app.use('/api/p2p', generateSellersRouter);
 app.use('/api/p2p', orderRoutes);
+app.use('/api/p2p', sellOrderRoutes);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

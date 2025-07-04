@@ -31,6 +31,7 @@ import validateRouter from './routes/validate';
 import generateBuyersRouter from './routes/generateBuyers';
 import generateSellersRouter from './routes/generateSellers';
 import { randomizeBuyerStatuses } from './utils/randomizeBuyerStatuses';
+import { randomizeSellerStatuses } from './utils/randomizeSellerStatuses';
 import orderRoutes from './routes/order'; // Add this import
 
 const app = express();
@@ -1221,8 +1222,9 @@ app.use('/api/admin/trash', trashRoutes);
 cron.schedule('0 */2 * * *', async () => {
   try {
     await randomizeBuyerStatuses();
+    await randomizeSellerStatuses();
   } catch (err) {
-    console.error('Error randomizing buyer statuses:', err);
+    console.error('Error randomizing buyer/seller statuses:', err);
   }
 });
 

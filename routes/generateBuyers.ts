@@ -6,10 +6,10 @@ const router = express.Router();
 
 const generateUniqueId = () => Math.floor(1000 + Math.random() * 9000).toString();
 
-const generate200UniqueIds = async (): Promise<string[]> => {
+const generate300UniqueIds = async (): Promise<string[]> => {
   const ids = new Set<string>();
 
-  while (ids.size < 200) {
+  while (ids.size < 300) {
     ids.add(generateUniqueId());
   }
 
@@ -19,12 +19,12 @@ const generate200UniqueIds = async (): Promise<string[]> => {
 
   const filtered = Array.from(ids).filter(id => !existingIds.has(id));
 
-  // If we don't have 200 clean IDs, retry
-  if (filtered.length < 200) {
-    return await generate200UniqueIds();
+  // If we don't have 300 clean IDs, retry
+  if (filtered.length < 300) {
+    return await generate300UniqueIds();
   }
 
-  return filtered.slice(0, 200);
+  return filtered.slice(0, 300);
 };
 
 const reviewSamples1 = [
@@ -56,9 +56,9 @@ const reviewSamples2 = [
 router.post('/generate-buyers', async (_req, res) => {
   try {
     const buyers = [];
-    const userIds = await generate200UniqueIds();
+    const userIds = await generate300UniqueIds();
 
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 300; i++) {
       buyers.push({
         username: faker.internet.userName() + i,
         userId: userIds[i],
@@ -76,7 +76,7 @@ router.post('/generate-buyers', async (_req, res) => {
     }
 
     await BuyerModel.insertMany(buyers);
-    res.json({ message: '✅ 200 unique simulated buyers created successfully' });
+    res.json({ message: '✅ 300 unique simulated buyers created successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -84,7 +84,7 @@ router.post('/generate-buyers', async (_req, res) => {
 
 router.get('/buyers', async (_req, res) => {
   try {
-    const buyers = await BuyerModel.find().limit(200);
+    const buyers = await BuyerModel.find().limit(300);
     res.json(buyers);
   } catch (err) {
     res.status(500).json({ error: err.message });

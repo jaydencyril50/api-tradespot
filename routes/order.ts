@@ -97,4 +97,21 @@ router.patch('/orders/:orderId/complete', authenticateToken, async (req: any, re
   }
 });
 
+// Cancel an order (user-initiated, only if pending)
+router.patch('/orders/:orderId/cancel', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    const { orderId } = req.params;
+    const order = await Order.findOne({ _id: orderId, userId });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.status !== 'pending') return res.status(400).json({ error: 'Order already completed or cancelled' });
+    order.status = 'cancelled';
+    order.completedAt = new Date();
+    await order.save();
+    res.json({ order });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

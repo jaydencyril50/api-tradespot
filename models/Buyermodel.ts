@@ -11,6 +11,7 @@ const buyerSchema = new mongoose.Schema({
   rating: Number, // e.g., 4.8
   reviews: [String],
   createdAt: { type: Date, default: Date.now },
+  price: { type: Number, required: true }, // Price per 1 spot (400–600 USDT)
 });
 
 export default mongoose.model("BuyerModel", buyerSchema);

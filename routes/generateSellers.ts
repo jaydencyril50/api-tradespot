@@ -63,6 +63,9 @@ router.post('/generate-sellers', async (_req, res) => {
       const minLimit = Math.floor(Math.random() * (10000 - 30 + 1)) + 30;
       const maxLimit = Math.max(minLimit + Math.floor(Math.random() * (10000 - minLimit)), minLimit + 1);
 
+      // Generate random price per spot (400–600 USDT)
+      const price = Math.floor(Math.random() * 201) + 400;
+
       // Helper to format numbers with K/M/B suffix
       function formatNumber(n: number): string {
         if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B';
@@ -80,6 +83,7 @@ router.post('/generate-sellers', async (_req, res) => {
         maxLimit,
         minLimitDisplay: formatNumber(minLimit),
         maxLimitDisplay: formatNumber(maxLimit),
+        price, // Add price to each seller
         status: ['online', 'offline', 'recently'][Math.floor(Math.random() * 3)],
         rating: +(Math.random() * 1 + 4).toFixed(2),
         reviews: [

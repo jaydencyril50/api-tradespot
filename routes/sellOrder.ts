@@ -27,10 +27,10 @@ function authenticateToken(req: any, res: Response, next: Function) {
 // Create a new order (Sell Spot)
 router.post('/sell-orders', authenticateToken, async (req: any, res: Response) => {
   try {
-    const { buyerId, buyerUsername, sellerId, sellerUsername, price, spotAmount, usdtAmount } = req.body;
-    const userId = req.user.userId;
+    const { buyerId, buyerUsername, price, spotAmount, usdtAmount } = req.body;
+    const sellerId = req.user.userId;
     // Check user spot balance
-    const user = await User.findById(userId);
+    const user = await User.findById(sellerId);
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.spotBalance < spotAmount) {
       return res.status(400).json({ error: 'Insufficient SPOT balance' });
@@ -40,11 +40,11 @@ router.post('/sell-orders', authenticateToken, async (req: any, res: Response) =
     const randomMs = Math.floor(Math.random() * (max - min + 1)) + min;
     const autoCompleteAt = new Date(Date.now() + randomMs);
     const order = await Order.create({
-      userId,
+      userId: sellerId, // seller is the authenticated user
       buyerId,
       buyerUsername,
-      sellerId,
-      sellerUsername,
+      sellerId, // for clarity, store sellerId
+      sellerUsername: user.username, // store seller's username
       price,
       spotAmount,
       usdtAmount,
@@ -61,16 +61,16 @@ router.post('/sell-orders', authenticateToken, async (req: any, res: Response) =
 // Complete a sell order (simulate payment, update balances)
 router.patch('/sell-orders/:orderId/complete', authenticateToken, async (req: any, res: Response) => {
   try {
-    const userId = req.user.userId;
+    const sellerId = req.user.userId;
     const { orderId } = req.params;
-    const order = await Order.findOne({ _id: orderId, userId, type: 'sell' });
+    const order = await Order.findOne({ _id: orderId, userId: sellerId, type: 'sell' });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.status !== 'pending') return res.status(400).json({ error: 'Order already completed or cancelled' });
     if (order.autoCompleteAt && new Date() < order.autoCompleteAt) {
       return res.status(400).json({ error: 'Order cannot be completed yet. Please wait.' });
     }
     // Update user balances
-    const user = await User.findById(userId);
+    const user = await User.findById(sellerId);
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.spotBalance < order.spotAmount) {
       return res.status(400).json({ error: 'Insufficient SPOT balance' });
@@ -78,13 +78,13 @@ router.patch('/sell-orders/:orderId/complete', authenticateToken, async (req: an
     user.spotBalance -= order.spotAmount;
     user.usdtBalance += order.usdtAmount;
     user.recentTransactions = user.recentTransactions || [];
-    // Use sellerUsername if present, else fallback to empty string
+    // Use buyerUsername for the note
     user.recentTransactions.push({
       type: 'P2P Sell',
       amount: order.spotAmount,
       currency: 'SPOT',
       date: new Date(),
-      note: `Sold to ${order.sellerUsername || ''}`
+      note: `Sold to ${order.buyerUsername || ''}`
     });
     await user.save();
     order.status = 'completed';
@@ -99,9 +99,9 @@ router.patch('/sell-orders/:orderId/complete', authenticateToken, async (req: an
 // Cancel a sell order (user-initiated, only if pending)
 router.patch('/sell-orders/:orderId/cancel', authenticateToken, async (req: any, res: Response) => {
   try {
-    const userId = req.user.userId;
+    const sellerId = req.user.userId;
     const { orderId } = req.params;
-    const order = await Order.findOne({ _id: orderId, userId, type: 'sell' });
+    const order = await Order.findOne({ _id: orderId, userId: sellerId, type: 'sell' });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.status !== 'pending') return res.status(400).json({ error: 'Order already completed or cancelled' });
     order.status = 'cancelled';

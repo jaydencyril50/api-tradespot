@@ -35,8 +35,10 @@ router.post('/orders', authenticateToken, async (req: any, res: Response) => {
     if (user.usdtBalance < usdtAmount) {
       return res.status(400).json({ error: 'Insufficient USDT balance' });
     }
-    // Lock funds (optional: for real P2P, you may want to lock, not deduct yet)
-    // For simulation, we deduct on completion
+    // Set auto-complete time: random 1-10 min from now
+    const min = 1 * 60 * 1000, max = 10 * 60 * 1000;
+    const randomMs = Math.floor(Math.random() * (max - min + 1)) + min;
+    const autoCompleteAt = new Date(Date.now() + randomMs);
     const order = await Order.create({
       userId,
       buyerId,
@@ -45,6 +47,7 @@ router.post('/orders', authenticateToken, async (req: any, res: Response) => {
       spotAmount,
       usdtAmount,
       status: 'pending',
+      autoCompleteAt,
     });
     res.json({ order });
   } catch (err: any) {
@@ -71,6 +74,10 @@ router.patch('/orders/:orderId/complete', authenticateToken, async (req: any, re
     const order = await Order.findOne({ _id: orderId, userId });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.status !== 'pending') return res.status(400).json({ error: 'Order already completed or cancelled' });
+    // Only allow completion if autoCompleteAt has passed
+    if (order.autoCompleteAt && new Date() < order.autoCompleteAt) {
+      return res.status(400).json({ error: 'Order cannot be completed yet. Please wait.' });
+    }
     // Update user balances
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });

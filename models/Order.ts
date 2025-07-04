@@ -10,6 +10,8 @@ const orderSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' },
   createdAt: { type: Date, default: Date.now },
   completedAt: { type: Date },
+  // Add autoCompleteAt field for backend timing
+  autoCompleteAt: { type: Date },
 });
 
 export default mongoose.model('Order', orderSchema);

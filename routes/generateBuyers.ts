@@ -59,9 +59,11 @@ router.post('/generate-buyers', async (_req, res) => {
     const userIds = await generate300UniqueIds();
 
     for (let i = 0; i < 300; i++) {
-      // Generate minLimit and maxLimit in USDT (30 to 10,000)
-      const minLimit = Math.floor(Math.random() * (10000 - 30 + 1)) + 30;
-      const maxLimit = Math.max(minLimit + Math.floor(Math.random() * (10000 - minLimit)), minLimit + 1);
+      // Use more small trade limits for minLimit
+      const smallLimits = [30, 50, 100, 250];
+      const minLimit = smallLimits[Math.floor(Math.random() * smallLimits.length)];
+      // maxLimit is a bit higher than minLimit, but still not huge
+      const maxLimit = minLimit + Math.floor(Math.random() * 200 + 1); // 1 to 200 USDT above minLimit
 
       // Generate random price per spot (400–600 USDT)
       const price = Math.floor(Math.random() * 201) + 400;

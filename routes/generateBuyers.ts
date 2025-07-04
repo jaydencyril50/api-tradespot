@@ -27,6 +27,32 @@ const generate200UniqueIds = async (): Promise<string[]> => {
   return filtered.slice(0, 200);
 };
 
+const reviewSamples1 = [
+  'Fast transaction!',
+  'Trusted seller \uD83D\uDCAF',
+  'Great service, thanks!',
+  'Smooth and quick.',
+  'Highly recommended!',
+  'No delay. All good.',
+  'Legit and responsive.',
+  'Thanks boss, 5 star!',
+  'Good rate. Will use again.',
+  'Fast payment. Respect!',
+];
+
+const reviewSamples2 = [
+  'Awesome guy.',
+  'Instant delivery!',
+  'Very professional.',
+  'This is my plug now.',
+  'Reliable and honest!',
+  'Worked like magic.',
+  'Great communication.',
+  'Super friendly dude.',
+  'Realest vendor here.',
+  'Verified! \uD83D\uDD25',
+];
+
 router.post('/generate-buyers', async (_req, res) => {
   try {
     const buyers = [];
@@ -43,8 +69,8 @@ router.post('/generate-buyers', async (_req, res) => {
         status: ['online', 'offline', 'recently'][Math.floor(Math.random() * 3)],
         rating: +(Math.random() * 1 + 4).toFixed(2),
         reviews: [
-          faker.lorem.words(3),
-          faker.lorem.words(5),
+          faker.helpers.arrayElement(reviewSamples1),
+          faker.helpers.arrayElement(reviewSamples2),
         ],
       });
     }

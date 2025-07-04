@@ -1,9 +1,6 @@
-import express from 'express';
-import mongoose from 'mongoose';
+import express, { Response } from 'express';
 import Order from '../models/Order';
 import User from '../models/User';
-import SellerModel from '../models/Sellermodel';
-import { Request, Response } from 'express';
 
 const router = express.Router();
 
@@ -24,15 +21,15 @@ function authenticateToken(req: any, res: Response, next: Function) {
   });
 }
 
-// Create a new order (Sell Spot)
+// Create a new sell order (user gives spot, receives USDT)
 router.post('/sell-orders', authenticateToken, async (req: any, res: Response) => {
   try {
     const { buyerId, buyerUsername, price, spotAmount, usdtAmount } = req.body;
     const sellerId = req.user.userId;
-    // Check user spot balance
-    const user = await User.findById(sellerId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    if (user.spotBalance < spotAmount) {
+    // Check seller's spot balance
+    const seller = await User.findById(sellerId);
+    if (!seller) return res.status(404).json({ error: 'User not found' });
+    if (seller.spotBalance < spotAmount) {
       return res.status(400).json({ error: 'Insufficient SPOT balance' });
     }
     // Set auto-complete time: random 1-10 min from now
@@ -40,11 +37,11 @@ router.post('/sell-orders', authenticateToken, async (req: any, res: Response) =
     const randomMs = Math.floor(Math.random() * (max - min + 1)) + min;
     const autoCompleteAt = new Date(Date.now() + randomMs);
     const order = await Order.create({
-      userId: sellerId, // seller is the authenticated user
+      userId: sellerId,
       buyerId,
       buyerUsername,
-      sellerId, // for clarity, store sellerId
-      sellerUsername: user.username, // store seller's username
+      sellerId,
+      sellerUsername: seller.username,
       price,
       spotAmount,
       usdtAmount,
@@ -58,7 +55,7 @@ router.post('/sell-orders', authenticateToken, async (req: any, res: Response) =
   }
 });
 
-// Complete a sell order (simulate payment, update balances)
+// Complete a sell order (user gives spot, receives USDT)
 router.patch('/sell-orders/:orderId/complete', authenticateToken, async (req: any, res: Response) => {
   try {
     const sellerId = req.user.userId;
@@ -69,28 +66,27 @@ router.patch('/sell-orders/:orderId/complete', authenticateToken, async (req: an
     if (order.autoCompleteAt && new Date() < order.autoCompleteAt) {
       return res.status(400).json({ error: 'Order cannot be completed yet. Please wait.' });
     }
-    // Update user balances
-    const user = await User.findById(sellerId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    if (user.spotBalance < order.spotAmount) {
+    // Update seller balances
+    const seller = await User.findById(sellerId);
+    if (!seller) return res.status(404).json({ error: 'User not found' });
+    if (seller.spotBalance < order.spotAmount) {
       return res.status(400).json({ error: 'Insufficient SPOT balance' });
     }
-    user.spotBalance -= order.spotAmount;
-    user.usdtBalance += order.usdtAmount;
-    user.recentTransactions = user.recentTransactions || [];
-    // Use buyerUsername for the note
-    user.recentTransactions.push({
+    seller.spotBalance -= order.spotAmount;
+    seller.usdtBalance += order.usdtAmount;
+    seller.recentTransactions = seller.recentTransactions || [];
+    seller.recentTransactions.push({
       type: 'P2P Sell',
       amount: order.spotAmount,
       currency: 'SPOT',
       date: new Date(),
-      note: `Sold to ${order.buyerUsername || ''}`
+      note: `Sold SPOT to ${order.buyerUsername || ''} for USDT`
     });
-    await user.save();
+    await seller.save();
     order.status = 'completed';
     order.completedAt = new Date();
     await order.save();
-    res.json({ order, usdtBalance: user.usdtBalance, spotBalance: user.spotBalance });
+    res.json({ order, usdtBalance: seller.usdtBalance, spotBalance: seller.spotBalance });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

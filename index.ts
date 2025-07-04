@@ -25,10 +25,10 @@ import trashRoutes from './routes/trash';
 import Chat from './models/Chat';
 import chatRoutes from './routes/chat';
 import User from './models/User';
-import marketRoutes from './routes/market';
 import teamRouter from './routes/team';
 import checkEmailRouter from './routes/checkEmail';
 import validateRouter from './routes/validate';
+import generateBuyersRouter from './routes/generateBuyers';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -106,7 +106,6 @@ passport.use(new GoogleStrategy({
 // Auth routes
 app.use('/api/team', teamRouter);
 // Remove redundant CORS here:
-app.use('/api/market', marketRoutes);
 app.get('/auth/google',
   (req: Request, res: Response, next: NextFunction) => {
     console.log('[Google OAuth] /auth/google called');
@@ -166,6 +165,7 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/chat', chatRoutes);
 app.use('/api', checkEmailRouter);
 app.use('/api', validateRouter);
+app.use('/api/p2p', generateBuyersRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

@@ -1235,13 +1235,13 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-// --- CRON: Update fake buyers' prices every 4 hours ---
-cron.schedule('0 */4 * * *', async () => {
+// --- CRON: Update fake buyers' prices every 24 hours ---
+cron.schedule('0 0 * * *', async () => {
   await updateFakeBuyerPrices();
 });
 
-// --- CRON: Update fake sellers' prices every 4 hours ---
-cron.schedule('0 */4 * * *', async () => {
+// --- CRON: Update fake sellers' prices every 24 hours ---
+cron.schedule('0 0 * * *', async () => {
   await updateFakeSellerPrices();
 });
 

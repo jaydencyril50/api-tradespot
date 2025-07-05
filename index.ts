@@ -37,6 +37,9 @@ import sellOrderRoutes from './routes/sellOrder';
 import Order from './models/Order';
 import { updateFakeBuyerPrices } from './cron/updateFakeBuyerPrices';
 import { updateFakeSellerPrices } from './cron/updateFakeSellerPrices';
+import BuyerModel from './models/Buyermodel';
+import SellerModel from './models/Sellermodel';
+
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -1233,6 +1236,42 @@ cron.schedule('0 * * * *', async () => {
   } catch (err) {
     console.error('[Activity Cleanup] Error:', err);
   }
+});
+
+// Helper to generate new random limits (same logic as your generation)
+function getRandomLimits() {
+  const minLimitBuckets = [
+    { min: 30, max: 150 },
+    { min: 150, max: 500 },
+    { min: 500, max: 1000 },
+    { min: 1000, max: 2000 },
+    { min: 2000, max: 5000 },
+  ];
+  const bucket = minLimitBuckets[Math.floor(Math.random() * minLimitBuckets.length)];
+  const minLimit = Math.floor(Math.random() * (bucket.max - bucket.min + 1)) + bucket.min;
+  const maxLimit = Math.floor(minLimit * (2 + Math.random() * 2)); // 2x to 4x
+  return { minLimit, maxLimit };
+}
+
+// CRON: Randomly update trade limits every 24 hours
+cron.schedule('0 0 * * *', async () => {
+  // Update buyers
+  const buyers = await BuyerModel.find();
+  for (const buyer of buyers) {
+    const { minLimit, maxLimit } = getRandomLimits();
+    buyer.minLimit = minLimit;
+    buyer.maxLimit = maxLimit;
+    await buyer.save();
+  }
+  // Update sellers
+  const sellers = await SellerModel.find();
+  for (const seller of sellers) {
+    const { minLimit, maxLimit } = getRandomLimits();
+    seller.minLimit = minLimit;
+    seller.maxLimit = maxLimit;
+    await seller.save();
+  }
+  console.log('Randomized trade limits for all buyers and sellers');
 });
 
 // --- CRON: Update fake buyers' prices every 24 hours ---

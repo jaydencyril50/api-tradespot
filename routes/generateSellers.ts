@@ -64,45 +64,50 @@ router.post('/generate-sellers', async (_req, res) => {
     const userIds = await generate300UniqueIds();
     const marketPrice = await fetchMarketPrice();
 
-    for (let i = 0; i < 300; i++) {
-      // Use more small trade limits for minLimit
-      const smallLimits = [30, 50, 100, 250];
-      const minLimit = smallLimits[Math.floor(Math.random() * smallLimits.length)];
-      // maxLimit is a bit higher than minLimit, but still not huge
-      const maxLimit = minLimit + Math.floor(Math.random() * 200 + 1); // 1 to 200 USDT above minLimit
-
-      // Price: random 1% to 2% ABOVE market price
-      const percent = 1 + Math.random() * 1; // 1% to 2%
-      const price = +(marketPrice * (1 + percent / 100)).toFixed(2);
-
-      // Helper to format numbers with K/M/B suffix
-      function formatNumber(n: number): string {
-        if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B';
-        if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.00$/, '') + 'M';
-        if (n >= 1_000) return (n / 1_000).toFixed(2).replace(/\.00$/, '') + 'K';
-        return n.toString();
+    // For each VIP level, generate 100 users with 5 buckets of minLimit
+    const minLimitBuckets = [
+      { min: 30, max: 150 },
+      { min: 150, max: 500 },
+      { min: 500, max: 1000 },
+      { min: 1000, max: 2000 },
+      { min: 2000, max: 5000 },
+    ];
+    let userIdx = 0;
+    for (let vipLevel = 1; vipLevel <= 3; vipLevel++) {
+      for (let bucket = 0; bucket < minLimitBuckets.length; bucket++) {
+        for (let j = 0; j < 20; j++) {
+          const { min, max } = minLimitBuckets[bucket];
+          const minLimit = Math.floor(Math.random() * (max - min + 1)) + min;
+          const maxLimit = minLimit + Math.floor(Math.random() * 200 + 1); // 1 to 200 USDT above minLimit
+          // Price: random 1% to 2% ABOVE market price
+          const percent = 1 + Math.random() * 1; // 1% to 2%
+          const price = +(marketPrice * (1 + percent / 100)).toFixed(2);
+          function formatNumber(n: number): string {
+            if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B';
+            if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.00$/, '') + 'M';
+            if (n >= 1_000) return (n / 1_000).toFixed(2).replace(/\.00$/, '') + 'K';
+            return n.toString();
+          }
+          sellers.push({
+            username: faker.internet.userName() + userIdx,
+            userId: userIds[userIdx],
+            vipLevel,
+            spotBalance: Math.floor(Math.random() * 296) + 5, // 5 to 300 spot
+            minLimit,
+            maxLimit,
+            minLimitDisplay: formatNumber(minLimit),
+            maxLimitDisplay: formatNumber(maxLimit),
+            price,
+            status: ['online', 'offline', 'recently'][Math.floor(Math.random() * 3)],
+            rating: +(Math.random() * 1 + 4).toFixed(2),
+            reviews: [
+              faker.helpers.arrayElement(reviewSamples1),
+              faker.helpers.arrayElement(reviewSamples2),
+            ],
+          });
+          userIdx++;
+        }
       }
-
-      // Assign VIP level: 0-99 => 1, 100-199 => 2, 200-299 => 3
-      const vipLevel = i < 100 ? 1 : i < 200 ? 2 : 3;
-
-      sellers.push({
-        username: faker.internet.userName() + i,
-        userId: userIds[i],
-        vipLevel,
-        spotBalance: Math.floor(Math.random() * 296) + 5, // 5 to 300 spot
-        minLimit,
-        maxLimit,
-        minLimitDisplay: formatNumber(minLimit),
-        maxLimitDisplay: formatNumber(maxLimit),
-        price, // Add price to each seller
-        status: ['online', 'offline', 'recently'][Math.floor(Math.random() * 3)],
-        rating: +(Math.random() * 1 + 4).toFixed(2),
-        reviews: [
-          faker.helpers.arrayElement(reviewSamples1),
-          faker.helpers.arrayElement(reviewSamples2),
-        ],
-      });
     }
 
     await SellerModel.insertMany(sellers);

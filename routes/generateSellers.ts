@@ -78,7 +78,8 @@ router.post('/generate-sellers', async (_req, res) => {
         for (let j = 0; j < 20; j++) {
           const { min, max } = minLimitBuckets[bucket];
           const minLimit = Math.floor(Math.random() * (max - min + 1)) + min;
-          const maxLimit = minLimit + Math.floor(Math.random() * 200 + 1); // 1 to 200 USDT above minLimit
+          // maxLimit: random between 2x and 4x minLimit (same as buyers)
+          const maxLimit = Math.floor(minLimit * (2 + Math.random() * 2)); // 2x to 4x
           // Price: random 1% to 2% ABOVE market price
           const percent = 1 + Math.random() * 1; // 1% to 2%
           const price = +(marketPrice * (1 + percent / 100)).toFixed(2);

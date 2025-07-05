@@ -418,6 +418,7 @@ app.get('/api/portfolio', authenticateToken, async (req: Request, res: Response)
         wallet: user.wallet,
         usdtBalance: user.usdtBalance,
         spotBalance: user.spotBalance,
+        flexBalance: user.flexBalance, // Added flexBalance to response
         recentTransactions: user.recentTransactions ? user.recentTransactions.slice(-5).reverse() : [],
         profilePicture: user.profilePicture, // Include profilePicture in response
         fundsLocked: user.fundsLocked // Add fundsLocked to response

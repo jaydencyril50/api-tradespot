@@ -1,6 +1,7 @@
 import express from 'express';
 import BuyerModel from '../models/Buyermodel';
 import { faker } from '@faker-js/faker';
+import { fetchMarketPrice } from '../utils/fetchMarketPrice';
 
 const router = express.Router();
 
@@ -61,6 +62,7 @@ router.post('/generate-buyers', async (_req, res) => {
     }
     const buyers = [];
     const userIds = await generate300UniqueIds();
+    const marketPrice = await fetchMarketPrice();
 
     for (let i = 0; i < 300; i++) {
       // Use more small trade limits for minLimit
@@ -69,8 +71,9 @@ router.post('/generate-buyers', async (_req, res) => {
       // maxLimit is a bit higher than minLimit, but still not huge
       const maxLimit = minLimit + Math.floor(Math.random() * 200 + 1); // 1 to 200 USDT above minLimit
 
-      // Generate random price per spot (400–600 USDT)
-      const price = Math.floor(Math.random() * 201) + 400;
+      // Price: random 1% to 2% BELOW market price
+      const percent = 1 + Math.random() * 1; // 1% to 2%
+      const price = +(marketPrice * (1 - percent / 100)).toFixed(2);
 
       // Helper to format numbers with K/M/B suffix
       function formatNumber(n: number): string {

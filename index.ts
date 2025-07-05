@@ -1253,8 +1253,8 @@ function getRandomLimits() {
   return { minLimit, maxLimit };
 }
 
-// CRON: Randomly update trade limits every 24 hours
-cron.schedule('0 0 * * *', async () => {
+// CRON: Randomly update trade limits every 2 minutes (for testing)
+cron.schedule('*/2 * * * *', async () => {
   // Update buyers
   const buyers = await BuyerModel.find();
   for (const buyer of buyers) {

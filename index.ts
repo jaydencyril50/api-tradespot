@@ -35,6 +35,7 @@ import { randomizeSellerStatuses } from './utils/randomizeSellerStatuses';
 import orderRoutes from './routes/order';
 import sellOrderRoutes from './routes/sellOrder';
 import Order from './models/Order';
+import { updateFakeBuyerPrices } from './cron/updateFakeBuyerPrices';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -1217,6 +1218,11 @@ cron.schedule('0 * * * *', async () => {
   } catch (err) {
     console.error('[Activity Cleanup] Error:', err);
   }
+});
+
+// --- CRON: Update fake buyers' prices every 2 minutes ---
+cron.schedule('*/2 * * * *', async () => {
+  await updateFakeBuyerPrices();
 });
 
 app.use('/api/admin/trash', trashRoutes);

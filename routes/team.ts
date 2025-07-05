@@ -23,7 +23,8 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
                 id: member._id,
                 fullName: member.fullName,
                 email: member.email,
-                joinedAt: tm.joinedAt
+                joinedAt: tm.joinedAt,
+                validMember: member.validMember // Add validMember field
             };
         })
     );

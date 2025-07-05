@@ -43,6 +43,7 @@ const userSchema = new mongoose.Schema({
         }
     ],
     passwordResetCode: { type: String }, // For password reset/verification code
+    validMember: { type: Boolean, default: false }, // Admin sets this
     vipLevel: { type: Number, enum: [1, 2, 3], default: 1 },
 });
 

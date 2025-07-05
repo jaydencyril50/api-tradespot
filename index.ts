@@ -411,6 +411,18 @@ app.get('/api/portfolio', authenticateToken, async (req: Request, res: Response)
         res.status(404).json({ error: 'User not found' });
         return;
     }
+    // Calculate valid team members and VIP level
+    const teamMemberIds = (user.teamMembers || []).map((tm: any) => tm.userId);
+    let validCount = 0;
+    if (teamMemberIds.length > 0) {
+        const teamMembers = await User.find({ _id: { $in: teamMemberIds } }, 'validMember');
+        validCount = teamMembers.filter((tm: any) => tm.validMember).length;
+    }
+    let vipLevel = 1;
+    if (validCount >= 30) vipLevel = 3;
+    else if (validCount >= 10) vipLevel = 2;
+    // Optionally, update in DB (uncomment if you want to persist):
+    // user.vipLevel = vipLevel; await user.save();
     res.json({
         id: user._id,
         fullName: user.fullName,
@@ -418,11 +430,12 @@ app.get('/api/portfolio', authenticateToken, async (req: Request, res: Response)
         wallet: user.wallet,
         usdtBalance: user.usdtBalance,
         spotBalance: user.spotBalance,
-        flexBalance: user.flexBalance, // Added flexBalance to response
+        flexBalance: user.flexBalance,
+        vipLevel, // Calculated dynamically
         recentTransactions: user.recentTransactions ? user.recentTransactions.slice(-5).reverse() : [],
-        profilePicture: user.profilePicture, // Include profilePicture in response
-        fundsLocked: user.fundsLocked // Add fundsLocked to response
-    });
+        profilePicture: user.profilePicture,
+        fundsLocked: user.fundsLocked
+});
 });
 
 app.put('/api/portfolio', authenticateToken, async (req: Request, res: Response): Promise<void> => {

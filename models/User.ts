@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
     wallet: String,
     usdtBalance: { type: Number, default: 0 },
     spotBalance: { type: Number, default: 0 },
+    flexBalance: { type: Number, default: 0 }, // Added flexBalance field
     recentTransactions: {
         type: [
             {
@@ -42,6 +43,7 @@ const userSchema = new mongoose.Schema({
         }
     ],
     passwordResetCode: { type: String }, // For password reset/verification code
+    vipLevel: { type: Number, enum: [1, 2, 3], default: 1 },
 });
 
 // Use global to avoid OverwriteModelError in dev/hot-reload and production

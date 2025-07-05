@@ -55,6 +55,10 @@ const reviewSamples2 = [
 
 router.post('/generate-buyers', async (_req, res) => {
   try {
+    const existingCount = await BuyerModel.countDocuments();
+    if (existingCount >= 300) {
+      return res.status(400).json({ error: 'Buyers already generated.' });
+    }
     const buyers = [];
     const userIds = await generate300UniqueIds();
 
@@ -76,10 +80,13 @@ router.post('/generate-buyers', async (_req, res) => {
         return n.toString();
       }
 
+      // Assign VIP level: 0-99 => 1, 100-199 => 2, 200-299 => 3
+      const vipLevel = i < 100 ? 1 : i < 200 ? 2 : 3;
+
       buyers.push({
         username: faker.internet.userName() + i,
         userId: userIds[i],
-        vipLevel: Math.ceil(Math.random() * 3),
+        vipLevel,
         spotBalance: Math.floor(Math.random() * 296) + 5, // 5 to 300 spot
         minLimit,
         maxLimit,

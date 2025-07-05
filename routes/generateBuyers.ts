@@ -93,7 +93,6 @@ router.post('/generate-buyers', async (_req, res) => {
             username: faker.internet.userName() + userIdx,
             userId: userIds[userIdx],
             vipLevel,
-            spotBalance: Math.floor(Math.random() * 296) + 5, // 5 to 300 spot
             minLimit,
             maxLimit,
             minLimitDisplay: formatNumber(minLimit),

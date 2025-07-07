@@ -48,6 +48,8 @@ import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
 import announcementRouter from './routes/announcement';
 import { startCronJobs } from './cronJobs';
+import { asyncHandler, logActivity, ActivityType } from './utils/utility';
+import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -174,9 +176,7 @@ app.get('/auth/google/callback',
 );
 
 // Health check route for backend or uptime monitoring
-app.get('/', (req: Request, res: Response) => {
-  res.status(200).send('TradeSpot server is alive ✅');
-});
+app.get('/', healthCheckHandler);
 
 // Mount chat routes for ProChat functionality
 app.use('/api', checkEmailRouter);
@@ -194,6 +194,8 @@ app.use('/api', userSettingsRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/auth', authRouter);
 app.use('/api/announcement', announcementRouter);
+app.use('/api/admin/trash', trashRoutes);
+app.use('/api/portfolio', portfolioRoutes);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);
@@ -224,50 +226,8 @@ mongoose.connect(MONGO_URI)
 .then(() => console.log('MongoDB connected'))
 .catch((err: any) => console.error('MongoDB connection error:', err));
 
-// Utility to wrap async route handlers
-// Fix: Add types to asyncHandler
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
-  return function (req: Request, res: Response, next: NextFunction) {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
-// Helper to log activity
-type ActivityType =
-  | 'USER_SIGNUP'
-  | 'WITHDRAWAL_SUBMITTED'
-  | 'DEPOSIT'
-  | 'USER_UPDATE'
-  | 'STOCK_PURCHASE'
-  | 'TRANSFER';
-async function logActivity(type: ActivityType, user: any, details?: any) {
-  await Activity.create({
-    type,
-    user: {
-      fullName: user.fullName,
-      email: user.email,
-      spotid: user.spotid,
-      _id: user._id,
-    },
-    details,
-  });
-}
-
-// Health check route for backend or uptime monitoring
-app.get('/', (req: Request, res: Response) => {
-  res.status(200).send('TradeSpot server is alive ✅');
-});
-
 // Start cron jobs
 startCronJobs();
-
-// Remove all cron.schedule jobs from this file, as they are now in cronJobs.ts
-
-app.use('/api/admin/trash', trashRoutes);
-
-// --- Start FLEX profit monitor on server startup ---
-
-app.use('/api/portfolio', portfolioRoutes);
 
 const startFlexProfitMonitor = () => {
   setInterval(() => {
@@ -283,22 +243,4 @@ server.listen(PORT, () => {
 });
 
 // Catch-all 404 logger (should be last middleware before app.listen)
-app.use((req, res) => {
-  console.log(`🚨 404 - No route found for ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: 'Not Found' });
-});
-
-// Helper to generate new random limits (same logic as your generation)
-function getRandomLimits() {
-  const minLimitBuckets = [
-    { min: 30, max: 150 },
-    { min: 150, max: 500 },
-    { min: 500, max: 1000 },
-    { min: 1000, max: 2000 },
-    { min: 2000, max: 5000 },
-  ];
-  const bucket = minLimitBuckets[Math.floor(Math.random() * minLimitBuckets.length)];
-  const minLimit = Math.floor(Math.random() * (bucket.max - bucket.min + 1)) + bucket.min;
-  const maxLimit = Math.floor(minLimit * (2 + Math.random() * 2)); // 2x to 4x
-  return { minLimit, maxLimit };
-}
+app.use(notFoundHandler);

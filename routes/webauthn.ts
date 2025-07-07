@@ -104,7 +104,7 @@ router.get('/authenticate/options', async (req, res) => {
   const options = await generateAuthenticationOptions({
     timeout: 60000,
     allowCredentials: user.webauthnCredentials.map(c => ({
-      id: c.credentialID,
+      id: c.credentialID.toString('base64url'), // Ensure base64url string
       type: 'public-key',
       transports: c.transports,
     })),

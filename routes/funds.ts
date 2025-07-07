@@ -320,4 +320,44 @@ router.post('/send-funds-privacy-code', authenticateToken, async (req: Request, 
     }
 });
 
+// --- VERIFY FUNDS PRIVACY ---
+router.post('/verify-funds-privacy', authenticateToken, async (req, res) => {
+    const { spotid, emailCode, password, twoFAToken } = req.body;
+    if (!spotid || !emailCode || !password || !twoFAToken) {
+        return res.status(400).json({ error: 'All fields are required.' });
+    }
+    try {
+        // Find user by spotid
+        const user = await User.findOne({ spotid });
+        if (!user) return res.status(404).json({ error: 'User not found.' });
+        // Check password
+        if (user.password !== password) {
+            return res.status(400).json({ error: 'Incorrect password.' });
+        }
+        // Check 2FA
+        if (!user.twoFA || !user.twoFA.enabled || !user.twoFA.secret) {
+            return res.status(400).json({ error: '2FA not enabled.' });
+        }
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFA.secret,
+            encoding: 'base32',
+            token: twoFAToken,
+            window: 1
+        });
+        if (!verified) {
+            return res.status(400).json({ error: 'Invalid 2FA code.' });
+        }
+        // Check email code
+        if (!verifyCode('fundsPrivacyCodes', user.email, emailCode)) {
+            return res.status(400).json({ error: 'Invalid or expired email code.' });
+        }
+        // Lock funds
+        user.fundsLocked = true;
+        await user.save();
+        return res.json({ message: 'Funds privacy verified and funds locked.' });
+    } catch (err) {
+        return res.status(500).json({ error: 'Server error.' });
+    }
+});
+
 export default router;

@@ -1,11 +1,11 @@
 import express from 'express';
-import authenticateAdmin from '../middleware/authenticateAdmin';
 import Trash from '../models/Trash';
+import authenticateToken from '../middleware/authenticateToken';
 
 const router = express.Router();
 
 // Get all trash items
-router.get('/', authenticateAdmin, async (req: express.Request, res: express.Response) => {
+router.get('/', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
     const items = await Trash.find().sort({ createdAt: -1 });
     res.json({ items });
@@ -15,7 +15,7 @@ router.get('/', authenticateAdmin, async (req: express.Request, res: express.Res
 });
 
 // Add a new trash item
-router.post('/', authenticateAdmin, async (req: express.Request, res: express.Response) => {
+router.post('/', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
     const { text } = req.body;
     if (!text || typeof text !== 'string') {

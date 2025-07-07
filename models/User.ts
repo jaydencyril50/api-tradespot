@@ -61,6 +61,12 @@ const userSchema = new mongoose.Schema({
             nickname: { type: String }, // Optional: user can name their device
         }
     ],
+    webauthnSettings: {
+        login: { type: Boolean, default: false },
+        transfer: { type: Boolean, default: false },
+        withdraw: { type: Boolean, default: false },
+        convert: { type: Boolean, default: false }
+    },
 });
 
 // Use global to avoid OverwriteModelError in dev/hot-reload and production

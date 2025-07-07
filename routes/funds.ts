@@ -6,6 +6,7 @@ import Withdrawal from '../models/Withdrawal';
 import nodemailer from 'nodemailer';
 import speakeasy from 'speakeasy';
 import authenticateToken from '../middleware/authenticateToken';
+import verifyWebauthn from '../middleware/verifyWebauthn';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
@@ -72,7 +73,7 @@ function getStyledEmailHtml(subject: string, body: string) {
 }
 
 // --- CONVERT ENDPOINT ---
-router.post('/convert', authenticateToken, async (req: Request, res: Response) => {
+router.post('/convert', authenticateToken, verifyWebauthn, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const { direction, amount } = req.body;
     const CONVERT_RATE = 500;
@@ -106,7 +107,7 @@ router.post('/convert', authenticateToken, async (req: Request, res: Response) =
 });
 
 // --- TRANSFER ENDPOINT ---
-router.post('/transfer', authenticateToken, async (req: Request, res: Response) => {
+router.post('/transfer', authenticateToken, verifyWebauthn, async (req: Request, res: Response) => {
     try {
         const senderId = (req as any).user.userId;
         const { recipientEmail, amount, twoFAToken } = req.body;
@@ -243,7 +244,7 @@ router.post('/send-withdrawal-verification', authenticateToken, async (req: Requ
 });
 
 // --- WITHDRAW ENDPOINT ---
-router.post('/withdraw', authenticateToken, async (req: Request, res: Response) => {
+router.post('/withdraw', authenticateToken, verifyWebauthn, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const { amount, verificationCode, twoFACode } = req.body;
     const user = await User.findById(userId);

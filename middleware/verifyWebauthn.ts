@@ -41,6 +41,13 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       console.warn('[verifyWebauthn] Missing assertion response');
       return res.status(400).json({ error: 'Missing assertion response' });
     }
+    // Find the matching credential by id
+    const credentialIdBuffer = Buffer.from(assertionResp.id, 'base64url');
+    const matchingCred = user.webauthnCredentials.find(c => Buffer.compare(c.credentialID, credentialIdBuffer) === 0);
+    if (!matchingCred) {
+      console.warn('[verifyWebauthn] No matching credential for id:', assertionResp.id);
+      return res.status(403).json({ error: 'No matching WebAuthn credential' });
+    }
     // 5. Get expected challenge
     const expectedChallenge = challengeStore[user._id];
     if (!expectedChallenge) {
@@ -54,10 +61,10 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       expectedOrigin: process.env.WEBAUTHN_ORIGIN!,
       expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
       credential: {
-        id: isoBase64URL.fromBuffer(user.webauthnCredentials[0].credentialID),
-        publicKey: user.webauthnCredentials[0].publicKey,
-        counter: user.webauthnCredentials[0].counter,
-        transports: user.webauthnCredentials[0].transports || [],
+        id: isoBase64URL.fromBuffer(matchingCred.credentialID),
+        publicKey: matchingCred.publicKey,
+        counter: matchingCred.counter,
+        transports: matchingCred.transports || [],
       },
     });
     if (!verification.verified) {
@@ -65,7 +72,7 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       return res.status(403).json({ error: 'WebAuthn verification failed' });
     }
     // 7. Update counter
-    user.webauthnCredentials[0].counter = verification.authenticationInfo.newCounter;
+    matchingCred.counter = verification.authenticationInfo.newCounter;
     await user.save();
     delete challengeStore[user._id];
     // 8. Continue

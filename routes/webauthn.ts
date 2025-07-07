@@ -74,7 +74,10 @@ router.post('/register/verify', async (req, res) => {
       expectedOrigin: process.env.WEBAUTHN_ORIGIN,
       expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
     });
-    if (!verification.verified) return res.status(400).json({ error: 'Verification failed' });
+    if (!verification.verified) {
+      // Return more details for debugging
+      return res.status(400).json({ error: 'Verification failed', verification });
+    }
     // Save credential
     user.webauthnCredentials = user.webauthnCredentials || [];
     user.webauthnCredentials.push({
@@ -88,7 +91,8 @@ router.post('/register/verify', async (req, res) => {
     delete challengeStore[user._id];
     res.json({ success: true });
   } catch (e) {
-    res.status(400).json({ error: 'Verification error', details: e.message });
+    // Return stack and error for debugging
+    res.status(400).json({ error: 'Verification error', details: e.message, stack: e.stack });
   }
 });
 

@@ -195,7 +195,7 @@ app.use('/api/messages', messagesRouter);
 app.use('/auth', authRouter);
 app.use('/api/announcement', announcementRouter);
 app.use('/api/admin/trash', trashRoutes);
-app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/auth', authRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

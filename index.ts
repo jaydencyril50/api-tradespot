@@ -192,7 +192,6 @@ app.use('/api/admin', adminRouter);
 app.use('/api', fundsRouter);
 app.use('/api', userSettingsRouter);
 app.use('/api/messages', messagesRouter);
-app.use('/auth', authRouter);
 app.use('/api/announcement', announcementRouter);
 app.use('/api/admin/trash', trashRoutes);
 app.use('/api/auth', authRouter);

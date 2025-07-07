@@ -77,10 +77,15 @@ router.post('/register/verify', async (req, res) => {
       return res.status(400).json({ error: 'Verification failed', verification });
     }
     // Save credential
+    const pk = verification.registrationInfo.credential.publicKey;
     user.webauthnCredentials = user.webauthnCredentials || [];
     user.webauthnCredentials.push({
       credentialID: Buffer.from(verification.registrationInfo.credential.id, 'base64url'),
-      publicKey: Buffer.from(verification.registrationInfo.credential.publicKey), // Always store as Buffer
+      publicKey: Buffer.isBuffer(pk)
+        ? pk
+        : typeof pk === 'string'
+          ? Buffer.from(pk, 'base64url')
+          : Buffer.from(pk), // handles Uint8Array
       counter: verification.registrationInfo.credential.counter,
       transports: attResp.transports,
       credentialType: attResp.credentialType,

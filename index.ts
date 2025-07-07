@@ -375,6 +375,41 @@ app.post('/auth/admin/login', async function (req: Request, res: Response) {
     res.json({ token });
 });
 
+// Admin signup endpoint
+app.post('/auth/admin/signup', async (req: Request, res: Response) => {
+  const { email, password, fullName } = req.body;
+  if (!email || !password || !fullName) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  // Check if admin already exists
+  const existing = await User.findOne({ email });
+  if (existing) {
+    return res.status(400).json({ error: 'Admin with this email already exists' });
+  }
+  // Generate a unique referral code and spotid
+  let referralCode;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  do {
+    referralCode = Array.from({length: 6}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  } while (await User.findOne({ referralCode }));
+  let spotid;
+  do {
+    spotid = Math.floor(1000000 + Math.random() * 9000000).toString();
+  } while (await User.findOne({ spotid }));
+  const hash = await bcrypt.hash(password, 10);
+  const adminUser = new User({
+    fullName,
+    email,
+    password: hash,
+    referralCode,
+    spotid,
+    isAdmin: true,
+    validMember: true
+  });
+  await adminUser.save();
+  res.json({ message: 'Admin registered successfully' });
+});
+
 // JWT authentication middleware
 export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
     const authHeader = req.headers['authorization'];

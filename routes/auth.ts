@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import passport from 'passport';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 import User from '../models/User';
 
 const router = express.Router();
@@ -182,6 +184,61 @@ router.get('/google/callback',
         }
     }
 );
+
+// --- Password Reset Request ---
+router.post('/request-password-reset', async (req: Request, res: Response) => {
+    const { email, wallet, spotid } = req.body;
+    if (!email || !wallet || !spotid) {
+        return res.status(400).json({ error: 'Email, wallet address, and spotid are required.' });
+    }
+    const user = await User.findOne({ email, wallet, spotid });
+    // Always respond with success to avoid email enumeration
+    if (!user) return res.json({ message: 'If the provided details are correct, a reset link has been sent.' });
+
+    // Generate a secure token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = Date.now() + 1000 * 60 * 30; // 30 minutes
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = expires;
+    await user.save();
+
+    // Send email
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://www.tradespot.online'}/reset-password?token=${token}`;
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+        },
+    });
+    await transporter.sendMail({
+        to: user.email,
+        from: process.env.EMAIL_USER,
+        subject: 'Password Reset Request',
+        html: `<p>You requested a password reset for your TradeSpot account.</p>
+               <p><a href="${resetUrl}">Click here to reset your password</a></p>
+               <p>This link will expire in 30 minutes. If you did not request this, please ignore this email.</p>`
+    });
+    res.json({ message: 'If the provided details are correct, a reset link has been sent.' });
+});
+
+// --- Password Reset (Verify Token & Update Password) ---
+router.post('/reset-password', async (req: Request, res: Response) => {
+    const { token, password } = req.body;
+    if (!token || !password) {
+        return res.status(400).json({ error: 'Token and new password are required.' });
+    }
+    const user = await User.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } });
+    if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired token.' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    user.password = hash;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    res.json({ message: 'Password has been reset successfully.' });
+});
 
 // --- OPTIONS for /login ---
 router.options('/login', (req, res) => {

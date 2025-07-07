@@ -46,6 +46,7 @@ import fundsRouter from './routes/funds';
 import userSettingsRouter from './routes/userSettings';
 import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
+import announcementRouter from './routes/announcement';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -192,6 +193,7 @@ app.use('/api', fundsRouter);
 app.use('/api', userSettingsRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/auth', authRouter);
+app.use('/api/announcement', announcementRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);
@@ -254,38 +256,6 @@ async function logActivity(type: ActivityType, user: any, details?: any) {
 // Health check route for backend or uptime monitoring
 app.get('/', (req: Request, res: Response) => {
   res.status(200).send('TradeSpot server is alive ✅');
-});
-
-// --- ANNOUNCEMENT ENDPOINTS ---
-app.get('/api/announcement', async (req: Request, res: Response) => {
-  try {
-    let announcement = await Announcement.findOne();
-    if (!announcement) {
-      announcement = await Announcement.create({ notice: '' });
-    }
-    res.json({ notice: announcement.notice });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch announcement' });
-  }
-});
-
-// Set/update the announcement
-app.post('/api/announcement', async (req: Request, res: Response) => {
-  const { notice } = req.body;
-  try {
-    let announcement = await Announcement.findOne();
-    if (!announcement) {
-      announcement = await Announcement.create({ notice });
-    } else {
-      announcement.notice = notice;
-      announcement.updatedAt = new Date();
-      await announcement.save();
-    }
-    // DO NOT create notifications for announcements anymore
-    res.json({ message: 'Announcement updated', notice: announcement.notice });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update announcement' });
-  }
 });
 
 // --- CRON: Randomly update trade limits every 24 hours

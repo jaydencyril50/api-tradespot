@@ -54,7 +54,10 @@ router.get('/register/options', async (req, res) => {
     userID: userIDBuffer,
     userName: user.email,
     attestationType: 'none',
-    authenticatorSelection: { userVerification: 'preferred' },
+    authenticatorSelection: {
+      residentKey: 'required',
+      userVerification: 'preferred'
+    },
     timeout: 60000,
   });
   challengeStore[user._id] = options.challenge;
@@ -103,11 +106,7 @@ router.get('/authenticate/options', async (req, res) => {
   if (!user || !user.webauthnCredentials || user.webauthnCredentials.length === 0) return res.status(404).json({ error: 'No credentials' });
   const options = await generateAuthenticationOptions({
     timeout: 60000,
-    allowCredentials: user.webauthnCredentials.map(c => ({
-      id: c.credentialID.toString('base64url'), // Ensure base64url string
-      type: 'public-key',
-      transports: c.transports,
-    })),
+    // Omit allowCredentials for discoverable credentials
     userVerification: 'preferred',
     rpID: process.env.WEBAUTHN_RPID || 'localhost',
   });

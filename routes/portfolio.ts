@@ -4,6 +4,33 @@ import User from '../models/User';
 
 const router = express.Router();
 
+// Add this at the top of your portfolio.ts routes
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    // Return relevant portfolio data
+    res.json({
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      wallet: user.wallet,
+      usdtBalance: user.usdtBalance,
+      spotBalance: user.spotBalance,
+      flexBalance: user.flexBalance,
+      vipLevel: user.vipLevel,
+      recentTransactions: user.recentTransactions ? user.recentTransactions.slice(-5).reverse() : [],
+      profilePicture: user.profilePicture,
+      fundsLocked: user.fundsLocked,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch portfolio' });
+  }
+});
+
 // POST /api/portfolio/flex-profit
 router.post('/flex-profit', authenticateToken, async (req, res) => {
   try {

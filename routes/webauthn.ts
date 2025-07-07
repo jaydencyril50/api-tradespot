@@ -79,8 +79,8 @@ router.post('/register/verify', async (req, res) => {
     // Save credential
     user.webauthnCredentials = user.webauthnCredentials || [];
     user.webauthnCredentials.push({
-      credentialID: Buffer.from(verification.registrationInfo.credential.id, 'base64url'), // ✅ FIXED
-      publicKey: verification.registrationInfo.credential.publicKey,
+      credentialID: Buffer.from(verification.registrationInfo.credential.id, 'base64url'),
+      publicKey: Buffer.from(verification.registrationInfo.credential.publicKey), // Always store as Buffer
       counter: verification.registrationInfo.credential.counter,
       transports: attResp.transports,
       credentialType: attResp.credentialType,

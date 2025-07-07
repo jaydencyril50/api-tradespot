@@ -44,6 +44,7 @@ import Withdrawal from './models/Withdrawal';
 import adminRouter from './routes/admin';
 import fundsRouter from './routes/funds';
 import userSettingsRouter from './routes/userSettings';
+import messagesRouter from './routes/messages';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -188,6 +189,7 @@ app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/admin', adminRouter);
 app.use('/api', fundsRouter);
 app.use('/api', userSettingsRouter);
+app.use('/api/messages', messagesRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);
@@ -196,6 +198,17 @@ const io = new SocketIOServer(server, {
     origin: '*',
     methods: ['GET', 'POST']
   }
+});
+
+// Make io available to routes
+app.set('io', io);
+
+// Socket.io connection logic
+io.on('connection', (socket) => {
+  // Expect client to join their userId room for direct messaging
+  socket.on('join', (userId) => {
+    if (userId) socket.join(userId.toString());
+  });
 });
 
 console.log("Mounting portfolio routes at /api/portfolio");

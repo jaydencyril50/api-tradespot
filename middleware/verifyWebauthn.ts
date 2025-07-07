@@ -30,9 +30,9 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       return res.status(401).json({ error: 'Invalid token' });
     }
     // 3. Find user
-    const user = await User.findById(payload.id);
+    const user = await User.findById(payload.userId);
     if (!user || !user.webauthnCredentials || user.webauthnCredentials.length === 0) {
-      console.warn('[verifyWebauthn] No WebAuthn credentials for user:', payload.id);
+      console.warn('[verifyWebauthn] No WebAuthn credentials for user:', payload.userId);
       return res.status(403).json({ error: 'No WebAuthn credentials' });
     }
     // 4. Get assertion from request

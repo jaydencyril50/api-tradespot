@@ -3,6 +3,7 @@ import cors from 'cors';
 import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse as verifyAuthResponse } from '@simplewebauthn/server';
 import { isoBase64URL } from '@simplewebauthn/server/helpers';
 import User from '../models/User';
+import challengeStore from '../utils/webauthnChallengeStore';
 
 const router = express.Router();
 
@@ -27,12 +28,6 @@ router.use(cors({
   },
   credentials: true
 }));
-
-// In-memory challenge store (replace with Redis/DB in production)
-const challengeStore: Record<string, string> = {};
-
-// Temporary test assignment
-const test = verifyAuthResponse;
 
 // Registration options
 router.get('/register/options', async (req, res) => {

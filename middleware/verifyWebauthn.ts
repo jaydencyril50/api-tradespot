@@ -3,12 +3,10 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 import { isoBase64URL } from '@simplewebauthn/server/helpers';
+import challengeStore from '../utils/webauthnChallengeStore';
 
 // You may want to move this to a shared config
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-
-// In-memory challenge store (should match your main challenge store)
-const challengeStore: Record<string, string> = {};
 
 export default async function verifyWebauthn(req: Request, res: Response, next: NextFunction) {
   try {

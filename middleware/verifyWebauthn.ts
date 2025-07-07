@@ -43,6 +43,9 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
     }
     // Find the matching credential by id
     const credentialIdBuffer = Buffer.from(assertionResp.id, 'base64url');
+    // Debug: log all stored credential IDs for this user
+    console.log('[verifyWebauthn] Stored credentialIDs for user:', user._id, user.webauthnCredentials.map(c => c.credentialID.toString('base64url')));
+    console.log('[verifyWebauthn] Incoming assertionResp.id:', assertionResp.id);
     const matchingCred = user.webauthnCredentials.find(c => Buffer.compare(c.credentialID, credentialIdBuffer) === 0);
     if (!matchingCred) {
       console.warn('[verifyWebauthn] No matching credential for id:', assertionResp.id);

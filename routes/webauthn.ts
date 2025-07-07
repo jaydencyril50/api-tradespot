@@ -79,7 +79,7 @@ router.post('/register/verify', async (req, res) => {
     // Save credential
     user.webauthnCredentials = user.webauthnCredentials || [];
     user.webauthnCredentials.push({
-      credentialID: Buffer.from(verification.registrationInfo.credential.id),
+      credentialID: Buffer.from(verification.registrationInfo.credential.id, 'base64url'), // ✅ FIXED
       publicKey: verification.registrationInfo.credential.publicKey,
       counter: verification.registrationInfo.credential.counter,
       transports: attResp.transports,

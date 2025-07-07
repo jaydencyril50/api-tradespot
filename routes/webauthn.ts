@@ -1,9 +1,32 @@
 import express from 'express';
+import cors from 'cors';
 import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse as verifyAuthResponse } from '@simplewebauthn/server';
 import { isoBase64URL } from '@simplewebauthn/server/helpers';
 import User from '../models/User';
 
 const router = express.Router();
+
+const allowedOrigins = [
+  'https://www.tradespot.online',
+  'https://tradespot.online',
+  'https://api.tradespot.online',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+// Attach CORS middleware directly
+router.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS blocked for origin: ' + origin));
+    }
+  },
+  credentials: true
+}));
 
 // In-memory challenge store (replace with Redis/DB in production)
 const challengeStore: Record<string, string> = {};

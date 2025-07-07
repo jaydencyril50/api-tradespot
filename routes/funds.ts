@@ -115,7 +115,7 @@ router.post('/transfer', authenticateToken, async (req: Request, res: Response) 
         const sender = await User.findById(senderId);
         if (!sender) return res.status(404).json({ error: 'Sender not found' });
         if (sender.email === recipientEmail) return res.status(400).json({ error: 'Cannot transfer to yourself' });
-        if (sender.spotBalance < amount) return res.status(400).json({ error: 'Insufficient SPOT balance' });
+        if (sender.flexBalance < amount) return res.status(400).json({ error: 'Insufficient FLEX balance' });
         if (!twoFAToken) {
             return res.status(400).json({ error: '2FA code required' });
         }
@@ -133,25 +133,25 @@ router.post('/transfer', authenticateToken, async (req: Request, res: Response) 
         }
         const recipient = await User.findOne({ email: recipientEmail });
         if (!recipient) return res.status(404).json({ error: 'Recipient not found' });
-        sender.spotBalance -= amount;
-        recipient.spotBalance += amount;
-        sender.recentTransactions.push({ type: 'Transfer Out', amount, currency: 'SPOT', date: new Date(), to: recipientEmail });
-        recipient.recentTransactions.push({ type: 'Transfer In', amount, currency: 'SPOT', date: new Date(), from: sender.email });
+        sender.flexBalance -= amount;
+        recipient.flexBalance += amount;
+        sender.recentTransactions.push({ type: 'Transfer Out', amount, currency: 'FLEX', date: new Date(), to: recipientEmail });
+        recipient.recentTransactions.push({ type: 'Transfer In', amount, currency: 'FLEX', date: new Date(), from: sender.email });
         await sender.save();
         await recipient.save();
         await Notification.create([
             {
                 userId: sender._id,
-                message: `You sent ${amount} SPOT to ${recipientEmail}.`,
+                message: `You sent ${amount} FLEX to ${recipientEmail}.`,
                 read: false
             },
             {
                 userId: recipient._id,
-                message: `You received ${amount} SPOT from ${sender.email}.`,
+                message: `You received ${amount} FLEX from ${sender.email}.`,
                 read: false
             }
         ]);
-        res.json({ message: `Transferred ${amount} SPOT to ${recipientEmail}` });
+        res.json({ message: `Transferred ${amount} FLEX to ${recipientEmail}` });
     } catch (err) {
         res.status(500).json({ error: 'Transfer failed' });
     }

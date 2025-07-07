@@ -274,15 +274,8 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     user.password = hash;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-    try {
-        await user.save();
-        // For debugging: log the user after save
-        console.log('Password reset for user:', user.email, 'New hash:', user.password);
-        res.json({ message: 'Password has been reset successfully.' });
-    } catch (err) {
-        console.error('Error saving new password:', err);
-        res.status(500).json({ error: 'Failed to update password.' });
-    }
+    await user.save();
+    res.json({ message: 'Successful✅' });
 });
 
 // --- OPTIONS for /login ---

@@ -50,6 +50,17 @@ const userSchema = new mongoose.Schema({
     flexProfitActive: { type: Boolean, default: false },
     flexProfitUsdtRecord: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false }, // New field for admin users
+    webauthnCredentials: [
+        {
+            credentialID: { type: Buffer, required: true },
+            publicKey: { type: String, required: true },
+            counter: { type: Number, required: true },
+            transports: [String],
+            credentialType: { type: String },
+            createdAt: { type: Date, default: Date.now },
+            nickname: { type: String }, // Optional: user can name their device
+        }
+    ],
 });
 
 // Use global to avoid OverwriteModelError in dev/hot-reload and production

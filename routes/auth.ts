@@ -6,6 +6,7 @@ import passport from 'passport';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import User from '../models/User';
+import webauthnRouter from './webauthn';
 
 const router = express.Router();
 
@@ -299,5 +300,7 @@ router.options('/login', (req, res) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     res.sendStatus(200);
 });
+
+router.use('/webauthn', webauthnRouter);
 
 export default router;

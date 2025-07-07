@@ -278,6 +278,19 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     res.json({ message: 'Successful✅' });
 });
 
+// --- Validate Password Reset Token ---
+router.get('/validate-reset-token', async (req: Request, res: Response) => {
+    const { token } = req.query;
+    if (!token || typeof token !== 'string') {
+        return res.status(400).json({ valid: false, error: 'Token is required.' });
+    }
+    const user = await User.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } });
+    if (!user) {
+        return res.status(400).json({ valid: false, error: 'Invalid or expired token.' });
+    }
+    res.json({ valid: true });
+});
+
 // --- OPTIONS for /login ---
 router.options('/login', (req, res) => {
     res.header('Access-Control-Allow-Origin', req.headers.origin || '');

@@ -10,18 +10,18 @@ export default function conditionalWebauthn(action: 'convert' | 'transfer' | 'wi
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user.userId;
+      console.log('[conditionalWebauthn] userId:', userId, 'action:', action);
       const user = await User.findById(userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
       if (user.webauthnSettings && user.webauthnSettings[action]) {
-        // If enabled, run verifyWebauthn middleware
-        // Call as a function, not as Express middleware stack
-        // (req, res, next) signature
+        console.log('[conditionalWebauthn] WebAuthn required for action:', action);
         return verifyWebauthn(req, res, next);
       } else {
-        // Not required, continue
+        console.log('[conditionalWebauthn] WebAuthn NOT required for action:', action);
         return next();
       }
     } catch (e: any) {
+      console.error('[conditionalWebauthn] Error:', e);
       return res.status(500).json({ error: 'WebAuthn check error', details: e.message });
     }
   };

@@ -84,6 +84,7 @@ router.post('/convert', authenticateToken, conditionalWebauthn('convert'), async
     }
     try {
         const user = await User.findById(userId);
+        console.log('[CONVERT] userId:', userId, 'direction:', direction, 'amount:', amount);
         if (!user) {
             res.status(404).json({ error: 'User not found' });
             return;
@@ -103,6 +104,7 @@ router.post('/convert', authenticateToken, conditionalWebauthn('convert'), async
             res.status(400).json({ error: 'Only FLEX to USDT conversion is allowed.' });
         }
     } catch (err) {
+        console.error('[CONVERT] Error:', err);
         res.status(500).json({ error: 'Conversion failed' });
     }
 });

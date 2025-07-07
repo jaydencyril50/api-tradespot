@@ -4,12 +4,12 @@ import DepositSession from '../models/DepositSession';
 import Activity from '../models/Activity';
 import Withdrawal from '../models/Withdrawal';
 import Notification from '../models/Notification';
-import authenticateAdmin from '../middleware/authenticateAdmin';
+import authenticateToken from '../middleware/authenticateToken';
 
 const router = express.Router();
 
 // --- ADMIN: GET ALL USERS ---
-router.get('/users', authenticateAdmin, async (req: Request, res: Response) => {
+router.get('/users', authenticateToken, async (req: Request, res: Response) => {
     try {
         const users = await User.find({}, 'fullName email spotid wallet usdtBalance spotBalance flexBalance faceStatus faceImage');
         res.json({ users });
@@ -19,7 +19,7 @@ router.get('/users', authenticateAdmin, async (req: Request, res: Response) => {
 });
 
 // --- ADMIN: UPDATE USER ---
-router.put('/users/:id', authenticateAdmin, async (req: Request, res: Response) => {
+router.put('/users/:id', authenticateToken, async (req: Request, res: Response) => {
     const { id } = req.params;
     const { fullName, email, spotid, wallet, usdtBalance, spotBalance, flexBalance } = req.body;
     try {
@@ -40,7 +40,7 @@ router.put('/users/:id', authenticateAdmin, async (req: Request, res: Response) 
 });
 
 // --- ADMIN: DELETE USER ---
-router.delete('/users/:id', authenticateAdmin, async (req: Request, res: Response) => {
+router.delete('/users/:id', authenticateToken, async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const user = await User.findByIdAndDelete(id);
@@ -54,7 +54,7 @@ router.delete('/users/:id', authenticateAdmin, async (req: Request, res: Respons
 });
 
 // --- ADMIN: GET ALL DEPOSIT REQUESTS ---
-router.get('/deposits', authenticateAdmin, async (req: Request, res: Response) => {
+router.get('/deposits', authenticateToken, async (req: Request, res: Response) => {
     try {
         const deposits = await DepositSession.find({ status: 'pending' })
             .populate('userId', 'email spotid')
@@ -66,7 +66,7 @@ router.get('/deposits', authenticateAdmin, async (req: Request, res: Response) =
 });
 
 // --- ADMIN: GET RECENT ACTIVITIES ---
-router.get('/recent-activities', authenticateAdmin, async (req: Request, res: Response) => {
+router.get('/recent-activities', authenticateToken, async (req: Request, res: Response) => {
     try {
         const activities = await Activity.find({}).sort({ createdAt: -1 }).limit(50).lean();
         res.json({ activities });
@@ -76,13 +76,13 @@ router.get('/recent-activities', authenticateAdmin, async (req: Request, res: Re
 });
 
 // --- ADMIN: GET ALL WITHDRAWALS ---
-router.get('/withdrawals', authenticateAdmin, async (req: Request, res: Response) => {
+router.get('/withdrawals', authenticateToken, async (req: Request, res: Response) => {
     const withdrawals = await Withdrawal.find().populate('userId', 'spotid wallet email');
     res.json({ withdrawals });
 });
 
 // --- ADMIN: APPROVE WITHDRAWAL ---
-router.post('/withdrawals/:id/approve', authenticateAdmin, async (req: Request, res: Response) => {
+router.post('/withdrawals/:id/approve', authenticateToken, async (req: Request, res: Response) => {
     const withdrawal = await Withdrawal.findById(req.params.id);
     if (!withdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
     withdrawal.status = 'approved';
@@ -96,7 +96,7 @@ router.post('/withdrawals/:id/approve', authenticateAdmin, async (req: Request, 
 });
 
 // --- ADMIN: REJECT WITHDRAWAL ---
-router.post('/withdrawals/:id/reject', authenticateAdmin, async (req: Request, res: Response) => {
+router.post('/withdrawals/:id/reject', authenticateToken, async (req: Request, res: Response) => {
     const withdrawal = await Withdrawal.findById(req.params.id);
     if (!withdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
     if (withdrawal.status === 'rejected') {
@@ -126,7 +126,7 @@ router.post('/withdrawals/:id/reject', authenticateAdmin, async (req: Request, r
 });
 
 // --- ADMIN: GET ALL TEAM USERS (with team info) ---
-router.get('/team-users', authenticateAdmin, async (req: Request, res: Response) => {
+router.get('/team-users', authenticateToken, async (req: Request, res: Response) => {
     try {
         // Get all users with their teamMembers populated (basic info)
         const users = await User.find({}, 'fullName email spotid teamMembers')
@@ -148,7 +148,7 @@ router.get('/team-users', authenticateAdmin, async (req: Request, res: Response)
 });
 
 // --- ADMIN: GET TEAM MEMBERS FOR A USER ---
-router.get('/team-members/:id', authenticateAdmin, async (req: Request, res: Response) => {
+router.get('/team-members/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
         const user = await User.findById(req.params.id).populate({
             path: 'teamMembers.userId',

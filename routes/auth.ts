@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import User from '../models/User';
 import webauthnRouter from './webauthn';
 import webauthnSettingsRouter from './webauthnSettings';
+import authenticateToken from '../middleware/authenticateToken';
 
 const router = express.Router();
 
@@ -320,6 +321,18 @@ router.get('/validate-reset-token', async (req: Request, res: Response) => {
         return res.status(400).json({ valid: false, error: 'Invalid or expired token.' });
     }
     res.json({ valid: true });
+});
+
+// --- Get current user info (for WebAuthn etc) ---
+router.get('/user/me', authenticateToken, async (req, res) => {
+    const userId = (req as any).user.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+        email: user.email,
+        webauthnCredentials: user.webauthnCredentials || [],
+        // add any other fields you want to expose
+    });
 });
 
 // --- OPTIONS for /login ---

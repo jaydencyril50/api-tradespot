@@ -353,15 +353,25 @@ app.options('/auth/login', (req, res) => {
 // Admin login endpoint
 app.post('/auth/admin/login', async function (req: Request, res: Response) {
     const { email, password } = req.body;
-    // Replace with your admin credentials or admin user lookup
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@tradespot.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    if (email !== adminEmail || password !== adminPassword) {
-        res.status(401).json({ error: 'Invalid admin credentials' });
-        return;
+    // Look up admin user in DB
+    const adminUser = await User.findOne({ email, isAdmin: true });
+    if (!adminUser) {
+        return res.status(401).json({ error: 'Admin user not found' });
     }
-    // Issue a JWT token for admin
-    const token = jwt.sign({ admin: true, email }, JWT_SECRET, { expiresIn: '1d' });
+    const valid = await bcrypt.compare(password, adminUser.password);
+    if (!valid) {
+        return res.status(401).json({ error: 'Invalid admin credentials' });
+    }
+    // Generate a unique token ID (jti)
+    const tokenId = new mongoose.Types.ObjectId().toString();
+    const token = jwt.sign({ userId: adminUser._id, email: adminUser.email, isAdmin: true, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });
+    // Remove oldest session if already 2 active
+    adminUser.sessions = adminUser.sessions || [];
+    if (adminUser.sessions.length >= 2) {
+        adminUser.sessions.shift();
+    }
+    adminUser.sessions.push({ tokenId, device: req.headers['user-agent'] || 'admin', issuedAt: new Date() });
+    await adminUser.save();
     res.json({ token });
 });
 

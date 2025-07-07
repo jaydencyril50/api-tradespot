@@ -47,6 +47,7 @@ const userSchema = new mongoose.Schema({
     vipLevel: { type: Number, enum: [1, 2, 3], default: 1 },
     flexProfitActive: { type: Boolean, default: false },
     flexProfitUsdtRecord: { type: Number, default: 0 },
+    isAdmin: { type: Boolean, default: false }, // New field for admin users
 });
 
 // Use global to avoid OverwriteModelError in dev/hot-reload and production

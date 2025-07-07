@@ -6,6 +6,7 @@ import Withdrawal from '../models/Withdrawal';
 import nodemailer from 'nodemailer';
 import speakeasy from 'speakeasy';
 import authenticateToken from '../middleware/authenticateToken';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
@@ -330,8 +331,9 @@ router.post('/verify-funds-privacy', authenticateToken, async (req, res) => {
         // Find user by spotid
         const user = await User.findOne({ spotid });
         if (!user) return res.status(404).json({ error: 'User not found.' });
-        // Check password
-        if (user.password !== password) {
+        // Check password (use bcrypt for hashed passwords)
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
             return res.status(400).json({ error: 'Incorrect password.' });
         }
         // Check 2FA

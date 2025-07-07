@@ -357,10 +357,13 @@ router.post('/verify-funds-privacy', authenticateToken, async (req, res) => {
         if (!verifyCode('fundsPrivacyCodes', user.email, emailCode)) {
             return res.status(400).json({ error: 'Invalid or expired email code.' });
         }
-        // Lock funds
-        user.fundsLocked = true;
+        // Toggle fundsLocked
+        user.fundsLocked = !user.fundsLocked;
         await user.save();
-        return res.json({ message: 'Funds privacy verified and funds locked.' });
+        return res.json({ 
+            message: user.fundsLocked ? 'Funds locked.' : 'Funds unlocked.',
+            fundsLocked: user.fundsLocked
+        });
     } catch (err) {
         return res.status(500).json({ error: 'Server error.' });
     }

@@ -77,15 +77,29 @@ router.post('/register/verify', async (req, res) => {
       return res.status(400).json({ error: 'Verification failed', verification });
     }
     // Save credential
-    const pk = verification.registrationInfo.credential.publicKey;
+    // Step 0: Optionally clear old credentials for this user (run once if needed)
+    // await User.updateOne({ email }, { $set: { webauthnCredentials: [] } });
+
+    // Step 1: Bulletproof publicKey handling
+    const rawPublicKey = verification.registrationInfo.credential.publicKey;
+    let publicKeyBuffer: Buffer;
+    if (rawPublicKey instanceof Uint8Array || ArrayBuffer.isView(rawPublicKey)) {
+      publicKeyBuffer = Buffer.from(rawPublicKey);
+    } else if (typeof rawPublicKey === 'string') {
+      publicKeyBuffer = Buffer.from(rawPublicKey, 'base64url');
+    } else if (Buffer.isBuffer(rawPublicKey)) {
+      publicKeyBuffer = rawPublicKey;
+    } else {
+      throw new Error('[registration] Unknown publicKey format');
+    }
+    // Step 2: Debug logs
+    console.log('[debug] publicKeyBuffer length:', publicKeyBuffer.length);
+    console.log('[debug] publicKeyBuffer (base64url):', publicKeyBuffer.toString('base64url'));
+
     user.webauthnCredentials = user.webauthnCredentials || [];
     user.webauthnCredentials.push({
       credentialID: Buffer.from(verification.registrationInfo.credential.id, 'base64url'),
-      publicKey: Buffer.isBuffer(pk)
-        ? pk
-        : typeof pk === 'string'
-          ? Buffer.from(pk, 'base64url')
-          : Buffer.from(pk), // handles Uint8Array
+      publicKey: publicKeyBuffer,
       counter: verification.registrationInfo.credential.counter,
       transports: attResp.transports,
       credentialType: attResp.credentialType,

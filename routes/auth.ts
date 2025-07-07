@@ -335,15 +335,6 @@ router.get('/user/me', authenticateToken, async (req, res) => {
     });
 });
 
-// --- OPTIONS for /login ---
-router.options('/login', (req, res) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '');
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.sendStatus(200);
-});
-
 router.use('/webauthn', webauthnRouter);
 router.use('/webauthn-settings', webauthnSettingsRouter);
 

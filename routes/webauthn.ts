@@ -39,10 +39,19 @@ router.get('/register/options', async (req, res) => {
   const { email } = req.query;
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ error: 'User not found' });
+  // SimpleWebAuthn v8+ requires userID as Buffer or Uint8Array
+  let userIDBuffer;
+  if (user._id instanceof Buffer) {
+    userIDBuffer = user._id;
+  } else if (user._id && user._id.id) {
+    userIDBuffer = user._id.id; // Mongoose ObjectId .id is a Buffer
+  } else {
+    userIDBuffer = Buffer.from(user._id.toString(), 'utf8');
+  }
   const options = await generateRegistrationOptions({
     rpName: process.env.WEBAUTHN_RP_NAME || 'Tradespot',
     rpID: process.env.WEBAUTHN_RPID || 'localhost',
-    userID: user._id.toString(),
+    userID: userIDBuffer,
     userName: user.email,
     attestationType: 'none',
     authenticatorSelection: { userVerification: 'preferred' },

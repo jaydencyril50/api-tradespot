@@ -47,6 +47,7 @@ import userSettingsRouter from './routes/userSettings';
 import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
 import announcementRouter from './routes/announcement';
+import { startCronJobs } from './cronJobs';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -121,8 +122,6 @@ passport.use(new GoogleStrategy({
   return done(null, profile);
 }));
 
-// Auth routes
-app.use('/api/team', teamRouter);
 // Remove redundant CORS here:
 app.get('/auth/google',
   (req: Request, res: Response, next: NextFunction) => {
@@ -182,6 +181,7 @@ app.get('/', (req: Request, res: Response) => {
 // Mount chat routes for ProChat functionality
 app.use('/api', checkEmailRouter);
 app.use('/api', validateRouter);
+app.use('/api/team', teamRouter);
 app.use('/api/p2p', generateBuyersRouter);
 app.use('/api/p2p', generateSellersRouter);
 app.use('/api/p2p', orderRoutes);
@@ -258,145 +258,12 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).send('TradeSpot server is alive ✅');
 });
 
-// --- CRON: Randomly update trade limits every 24 hours
-cron.schedule('0 0 * * *', async () => {
-  // Update buyers
-  const buyers = await BuyerModel.find();
-  for (const buyer of buyers) {
-    const { minLimit, maxLimit } = getRandomLimits();
-    buyer.minLimit = minLimit;
-    buyer.maxLimit = maxLimit;
-    await buyer.save();
-  }
-  // Update sellers
-  const sellers = await SellerModel.find();
-  for (const seller of sellers) {
-    const { minLimit, maxLimit } = getRandomLimits();
-    seller.minLimit = minLimit;
-    seller.maxLimit = maxLimit;
-    await seller.save();
-  }
-  console.log('Randomized trade limits for all buyers and sellers');
-});
+// Start cron jobs
+startCronJobs();
 
-// --- CRON: Update fake buyers' prices every 24 hours ---
-cron.schedule('0 0 * * *', async () => {
-  await updateFakeBuyerPrices();
-});
-
-// --- CRON: Update fake sellers' prices every 24 hours ---
-cron.schedule('0 0 * * *', async () => {
-  await updateFakeSellerPrices();
-});
+// Remove all cron.schedule jobs from this file, as they are now in cronJobs.ts
 
 app.use('/api/admin/trash', trashRoutes);
-
-// --- CRON JOB: Randomize buyer statuses every 2 hours ---
-cron.schedule('0 */2 * * *', async () => {
-  try {
-    await randomizeBuyerStatuses();
-    await randomizeSellerStatuses();
-  } catch (err) {
-    console.error('Error randomizing buyer/seller statuses:', err);
-  }
-});
-
-// --- CRON JOB: Auto-complete orders when random countdown expires ---
-cron.schedule('*/10 * * * * *', async () => {
-  try {
-    const now = new Date();
-    // Find all pending orders where autoCompleteAt has passed
-    const ordersToComplete = await Order.find({
-      status: 'pending',
-      autoCompleteAt: { $lte: now }
-    });
-    for (const order of ordersToComplete) {
-      const user = await User.findById(order.userId);
-      if (!user) continue;
-      if (order.type === 'sell') {
-        if (user.spotBalance < order.spotAmount) continue;
-        user.spotBalance -= order.spotAmount;
-        user.usdtBalance += order.usdtAmount;
-        user.recentTransactions = user.recentTransactions || [];
-        user.recentTransactions.push({
-          type: 'P2P Sell',
-          amount: order.spotAmount,
-          currency: 'SPOT',
-          date: new Date(),
-          note: `Sold to ${order.sellerUsername || ''}`
-        });
-      } else {
-        if (user.usdtBalance < order.usdtAmount) continue;
-        user.usdtBalance -= order.usdtAmount;
-        user.spotBalance += order.spotAmount;
-        user.recentTransactions = user.recentTransactions || [];
-        user.recentTransactions.push({
-          type: 'P2P Buy',
-          amount: order.spotAmount,
-          currency: 'SPOT',
-          date: new Date(),
-          note: `Bought from ${order.buyerUsername || ''}`
-        });
-      }
-      await user.save();
-      order.status = 'completed';
-      order.completedAt = new Date();
-      await order.save();
-    }
-  } catch (err) {
-    console.error('[Auto-complete Orders] Error:', err);
-  }
-});
-
-cron.schedule('*/1 * * * *', async () => {
-  try {
-    // Find all pending orders with autoCompleteAt in the future (still within 10 min window)
-    const now = new Date();
-    const pendingOrders = await Order.find({
-      status: 'pending',
-      autoCompleteAt: { $gt: now }
-    });
-    for (const order of pendingOrders) {
-      // 1 in 10 chance per minute to complete (adjust probability as needed)
-      if (Math.random() < 0.12) { // ~12% chance per minute
-        // Complete the order
-        const user = await User.findById(order.userId);
-        if (!user) continue;
-        if (order.type === 'sell') {
-          if (user.spotBalance < order.spotAmount) continue;
-          user.spotBalance -= order.spotAmount;
-          user.usdtBalance += order.usdtAmount;
-          user.recentTransactions = user.recentTransactions || [];
-          user.recentTransactions.push({
-            type: 'P2P Sell',
-            amount: order.spotAmount,
-            currency: 'SPOT',
-            date: new Date(),
-            note: `Sold to ${order.sellerUsername || ''}`
-          });
-        } else {
-          if (user.usdtBalance < order.usdtAmount) continue;
-          user.usdtBalance -= order.usdtAmount;
-          user.spotBalance += order.spotAmount;
-          user.recentTransactions = user.recentTransactions || [];
-          user.recentTransactions.push({
-            type: 'P2P Buy',
-            amount: order.spotAmount,
-            currency: 'SPOT',
-            date: new Date(),
-            note: `Bought from ${order.buyerUsername || ''}`
-          });
-        }
-        await user.save();
-        order.status = 'completed';
-        order.completedAt = new Date();
-        await order.save();
-      }
-    }
-  } catch (err) {
-    console.error('[Random Complete Orders] Error:', err);
-  }
-});
 
 // --- Start FLEX profit monitor on server startup ---
 

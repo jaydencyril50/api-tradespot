@@ -148,20 +148,23 @@ router.post('/transfer', authenticateToken, conditionalWebauthn('transfer'), asy
         if (!sender) return res.status(404).json({ error: 'Sender not found' });
         if (sender.email === recipientEmail) return res.status(400).json({ error: 'Cannot transfer to yourself' });
         if (sender.flexBalance < amount) return res.status(400).json({ error: 'Insufficient FLEX balance' });
-        if (!twoFAToken) {
-            return res.status(400).json({ error: '2FA code required' });
-        }
-        if (!sender.twoFA || !sender.twoFA.enabled || !sender.twoFA.secret) {
-            return res.status(400).json({ error: '2FA must be enabled to transfer funds' });
-        }
-        const verified = speakeasy.totp.verify({
-            secret: sender.twoFA.secret,
-            encoding: 'base32',
-            token: twoFAToken,
-            window: 1
-        });
-        if (!verified) {
-            return res.status(400).json({ error: 'Invalid 2FA code' });
+        // Skip 2FA check if WebAuthn is enabled for transfer
+        if (!(sender.webauthnSettings && sender.webauthnSettings.transfer)) {
+            if (!twoFAToken) {
+                return res.status(400).json({ error: '2FA code required' });
+            }
+            if (!sender.twoFA || !sender.twoFA.enabled || !sender.twoFA.secret) {
+                return res.status(400).json({ error: '2FA must be enabled to transfer funds' });
+            }
+            const verified = speakeasy.totp.verify({
+                secret: sender.twoFA.secret,
+                encoding: 'base32',
+                token: twoFAToken,
+                window: 1
+            });
+            if (!verified) {
+                return res.status(400).json({ error: 'Invalid 2FA code' });
+            }
         }
         const recipient = await User.findOne({ email: recipientEmail });
         if (!recipient) return res.status(404).json({ error: 'Recipient not found' });
@@ -289,6 +292,27 @@ router.post('/withdraw', authenticateToken, conditionalWebauthn('withdraw'), asy
     if (user.flexBalance == null || user.flexBalance < amount) {
         res.status(400).json({ error: 'Insufficient FLEX balance' });
         return;
+    }
+    // Skip 2FA check if WebAuthn is enabled for withdraw
+    if (!(user.webauthnSettings && user.webauthnSettings.withdraw)) {
+        if (!twoFACode) {
+            res.status(400).json({ error: '2FA code required' });
+            return;
+        }
+        if (!user.twoFA || !user.twoFA.enabled || !user.twoFA.secret) {
+            res.status(400).json({ error: '2FA must be enabled to withdraw funds' });
+            return;
+        }
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFA.secret,
+            encoding: 'base32',
+            token: twoFACode,
+            window: 1
+        });
+        if (!verified) {
+            res.status(400).json({ error: 'Invalid 2FA code' });
+            return;
+        }
     }
     user.flexBalance -= amount;
     await user.save();

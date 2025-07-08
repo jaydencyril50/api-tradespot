@@ -65,7 +65,9 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
       credential: {
         id: isoBase64URL.fromBuffer(matchingCred.credentialID),
-        publicKey: matchingCred.publicKey,
+        publicKey: Buffer.isBuffer(matchingCred.publicKey)
+          ? matchingCred.publicKey
+          : Buffer.from(matchingCred.publicKey, 'base64url'),
         counter: matchingCred.counter,
         transports: matchingCred.transports || [],
       },

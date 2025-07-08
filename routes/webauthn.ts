@@ -35,14 +35,7 @@ router.get('/register/options', async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ error: 'User not found' });
   // SimpleWebAuthn v8+ requires userID as Buffer or Uint8Array
-  let userIDBuffer;
-  if (user._id instanceof Buffer) {
-    userIDBuffer = user._id;
-  } else if (user._id && user._id.id) {
-    userIDBuffer = user._id.id; // Mongoose ObjectId .id is a Buffer
-  } else {
-    userIDBuffer = Buffer.from(user._id.toString(), 'utf8');
-  }
+  const userIDBuffer = Buffer.from(user._id.toString(), 'utf8'); // safest and consistent
   const options = await generateRegistrationOptions({
     rpName: process.env.WEBAUTHN_RP_NAME || 'Tradespot',
     rpID: process.env.WEBAUTHN_RPID || 'localhost',
@@ -77,21 +70,10 @@ router.post('/register/verify', async (req, res) => {
       return res.status(400).json({ error: 'Verification failed', verification });
     }
     // Save credential
-    // Step 0: Optionally clear old credentials for this user (run once if needed)
-    // await User.updateOne({ email }, { $set: { webauthnCredentials: [] } });
-
     // Step 1: Bulletproof publicKey handling
     const rawPublicKey = verification.registrationInfo.credential.publicKey;
-    let publicKeyBuffer: Buffer;
-    if (rawPublicKey instanceof Uint8Array || ArrayBuffer.isView(rawPublicKey)) {
-      publicKeyBuffer = Buffer.from(rawPublicKey);
-    } else if (typeof rawPublicKey === 'string') {
-      publicKeyBuffer = Buffer.from(rawPublicKey, 'base64url');
-    } else if (Buffer.isBuffer(rawPublicKey)) {
-      publicKeyBuffer = rawPublicKey;
-    } else {
-      throw new Error('[registration] Unknown publicKey format');
-    }
+    // Always decode to Buffer (lib should already give Buffer, but force for safety)
+    const publicKeyBuffer = Buffer.from(rawPublicKey);
     // Step 2: Debug logs
     console.log('[debug] publicKeyBuffer length:', publicKeyBuffer.length);
     console.log('[debug] publicKeyBuffer (base64url):', publicKeyBuffer.toString('base64url'));
@@ -99,10 +81,10 @@ router.post('/register/verify', async (req, res) => {
     user.webauthnCredentials = user.webauthnCredentials || [];
     user.webauthnCredentials.push({
       credentialID: Buffer.from(verification.registrationInfo.credential.id, 'base64url'),
-      publicKey: Buffer.isBuffer(publicKeyBuffer) ? publicKeyBuffer : Buffer.from(publicKeyBuffer),
+      publicKey: publicKeyBuffer,
       counter: verification.registrationInfo.credential.counter,
-      transports: attResp.transports,
-      credentialType: attResp.credentialType,
+      transports: attResp.transports || [],
+      credentialType: attResp.credentialType || 'public-key',
     });
     await user.save();
     delete challengeStore[user._id];
@@ -135,21 +117,26 @@ router.post('/authenticate/verify', async (req, res) => {
   if (!user || !user.webauthnCredentials || user.webauthnCredentials.length === 0) return res.status(404).json({ error: 'No credentials' });
   const expectedChallenge = challengeStore[user._id];
   try {
+    const matchingCred = user.webauthnCredentials.find(
+      cred => isoBase64URL.fromBuffer(cred.credentialID) === assertionResp.id
+    );
+    if (!matchingCred) return res.status(403).json({ error: 'No matching credential found' });
+
     const verification = await verifyAuthResponse({
       response: assertionResp,
       expectedChallenge,
       expectedOrigin: process.env.WEBAUTHN_ORIGIN!,
       expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
       credential: {
-        id: isoBase64URL.fromBuffer(user.webauthnCredentials[0].credentialID), // updated to use isoBase64URL
-        publicKey: user.webauthnCredentials[0].publicKey,
-        counter: user.webauthnCredentials[0].counter,
-        transports: user.webauthnCredentials[0].transports || [],
+        id: assertionResp.id,
+        publicKey: matchingCred.publicKey,
+        counter: matchingCred.counter,
+        transports: matchingCred.transports || [],
       },
     });
     if (!verification.verified) return res.status(400).json({ error: 'Verification failed' });
     // Update counter
-    user.webauthnCredentials[0].counter = verification.authenticationInfo.newCounter;
+    matchingCred.counter = verification.authenticationInfo.newCounter;
     await user.save();
     delete challengeStore[user._id];
     // Issue session/JWT here as needed

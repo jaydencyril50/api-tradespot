@@ -1,4 +1,59 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
+
+// 1. Define WebAuthnCredential interface (now extends Types.Subdocument)
+export interface WebAuthnCredential extends Types.Subdocument {
+    credentialID: Buffer;
+    publicKey: Buffer;
+    counter: number;
+    transports?: string[];
+    credentialType?: string;
+    createdAt?: Date;
+    nickname?: string;
+}
+
+// 2. Define UserDocument interface
+export interface UserDocument extends Document {
+    fullName: string;
+    email: string;
+    password: string;
+    wallet?: string;
+    usdtBalance: number;
+    spotBalance: number;
+    flexBalance: number;
+    referralCode: string;
+    spotid: string;
+    fundsLocked: boolean;
+    isAdmin: boolean;
+    webauthnCredentials: Types.DocumentArray<WebAuthnCredential>;
+    webauthnSettings: {
+        login: boolean;
+        transfer: boolean;
+        withdraw: boolean;
+        convert: boolean;
+    };
+    webauthnCredentialsPlain: Array<{
+        credentialID: string;
+        publicKey: string;
+        counter: number;
+        transports?: string[];
+        credentialType?: string;
+        createdAt?: Date;
+        nickname?: string;
+    }>;
+
+    // Extend with more fields as needed
+}
+
+// 3. Define WebAuthnCredentialSchema as a subdocument schema
+const WebAuthnCredentialSchema = new mongoose.Schema({
+    credentialID: { type: Buffer, required: true },
+    publicKey: { type: Buffer, required: true },
+    counter: { type: Number, required: true },
+    transports: [String],
+    credentialType: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    nickname: { type: String },
+}, { _id: false });
 
 const userSchema = new mongoose.Schema({
     fullName: String,
@@ -50,17 +105,10 @@ const userSchema = new mongoose.Schema({
     flexProfitActive: { type: Boolean, default: false },
     flexProfitUsdtRecord: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false }, // New field for admin users
-    webauthnCredentials: [
-        {
-            credentialID: { type: Buffer, required: true },
-            publicKey: { type: String, required: true },
-            counter: { type: Number, required: true },
-            transports: [String],
-            credentialType: { type: String },
-            createdAt: { type: Date, default: Date.now },
-            nickname: { type: String }, // Optional: user can name their device
-        }
-    ],
+    webauthnCredentials: {
+        type: [WebAuthnCredentialSchema],
+        default: []
+    },
     webauthnSettings: {
         login: { type: Boolean, default: false },
         transfer: { type: Boolean, default: false },
@@ -69,7 +117,41 @@ const userSchema = new mongoose.Schema({
     },
 });
 
-// Use global to avoid OverwriteModelError in dev/hot-reload and production
-const User = (global as any).User || mongoose.models.User || mongoose.model('User', userSchema);
+// Add toJSON transform to auto-handle Buffers for webauthnCredentials
+userSchema.set('toJSON', {
+    transform: (doc, ret) => {
+        if (ret.webauthnCredentials) {
+            // @ts-expect-error: webauthnCredentialsPlain is added dynamically for serialization
+            ret.webauthnCredentialsPlain = ret.webauthnCredentials.map((cred: any) => ({
+                credentialID: cred.credentialID?.toString('base64url'),
+                publicKey: cred.publicKey?.toString('base64url'),
+                counter: cred.counter,
+                transports: cred.transports,
+                credentialType: cred.credentialType,
+                createdAt: cred.createdAt,
+                nickname: cred.nickname,
+            }));
+            delete ret.webauthnCredentials;
+        }
+        return ret;
+    },
+});
+
+// Add a virtual for webauthnCredentialsPlain
+userSchema.virtual('webauthnCredentialsPlain').get(function (this: any) {
+    if (!this.webauthnCredentials) return [];
+    return this.webauthnCredentials.map((cred: any) => ({
+        credentialID: cred.credentialID?.toString('base64url'),
+        publicKey: cred.publicKey?.toString('base64url'),
+        counter: cred.counter,
+        transports: cred.transports,
+        credentialType: cred.credentialType,
+        createdAt: cred.createdAt,
+        nickname: cred.nickname,
+    }));
+});
+
+// 4. Use correct generic when defining your model (with global hot-reload support)
+const User = (global as any).User || mongoose.model<UserDocument>('User', userSchema);
 (global as any).User = User;
 export default User;

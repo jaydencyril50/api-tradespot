@@ -41,12 +41,10 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       console.warn('[verifyWebauthn] Missing assertion response');
       return res.status(400).json({ error: 'Missing assertion response' });
     }
-    // Find the matching credential by id
-    const credentialIdBuffer = Buffer.from(assertionResp.id, 'base64url');
-    // Debug: log all stored credential IDs for this user
-    console.log('[verifyWebauthn] Stored credentialIDs for user:', user._id, user.webauthnCredentials.map(c => c.credentialID.toString('base64url')));
-    console.log('[verifyWebauthn] Incoming assertionResp.id:', assertionResp.id);
-    const matchingCred = user.webauthnCredentials.find(c => Buffer.compare(c.credentialID, credentialIdBuffer) === 0);
+    // 4. Find the matching credential by id (base64url string match)
+    const matchingCred = user.webauthnCredentials.find(
+      cred => isoBase64URL.fromBuffer(cred.credentialID) === assertionResp.id
+    );
     if (!matchingCred) {
       console.warn('[verifyWebauthn] No matching credential for id:', assertionResp.id);
       return res.status(403).json({ error: 'No matching WebAuthn credential' });
@@ -57,15 +55,17 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       console.warn('[verifyWebauthn] No challenge found for user:', user._id);
       return res.status(400).json({ error: 'No challenge found' });
     }
-    // 6. Prepare publicKey as Buffer
+    // 6. Convert publicKey safely
+    function toBuffer(input: any): Buffer {
+      if (Buffer.isBuffer(input)) return input;
+      if (typeof input === 'string') return Buffer.from(input, 'base64url');
+      if (input?.type === 'Buffer' && Array.isArray(input.data)) return Buffer.from(input.data);
+      throw new Error('Invalid buffer input');
+    }
     let publicKeyBuffer: Buffer;
-    if (Buffer.isBuffer(matchingCred.publicKey)) {
-      publicKeyBuffer = matchingCred.publicKey;
-    } else if (typeof matchingCred.publicKey === 'string') {
-      publicKeyBuffer = Buffer.from(matchingCred.publicKey, 'base64url');
-    } else if (matchingCred.publicKey && matchingCred.publicKey.type === 'Buffer' && Array.isArray(matchingCred.publicKey.data)) {
-      publicKeyBuffer = Buffer.from(matchingCred.publicKey.data);
-    } else {
+    try {
+      publicKeyBuffer = toBuffer(matchingCred.publicKey);
+    } catch (e) {
       console.error('[verifyWebauthn] Invalid publicKey format:', matchingCred.publicKey);
       return res.status(500).json({ error: 'Invalid publicKey format' });
     }
@@ -76,7 +76,7 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       expectedOrigin: process.env.WEBAUTHN_ORIGIN!,
       expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
       credential: {
-        id: isoBase64URL.fromBuffer(matchingCred.credentialID),
+        id: assertionResp.id, // use raw incoming id
         publicKey: publicKeyBuffer,
         counter: matchingCred.counter,
         transports: matchingCred.transports || [],

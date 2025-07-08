@@ -57,7 +57,19 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       console.warn('[verifyWebauthn] No challenge found for user:', user._id);
       return res.status(400).json({ error: 'No challenge found' });
     }
-    // 6. Verify assertion
+    // 6. Prepare publicKey as Buffer
+    let publicKeyBuffer: Buffer;
+    if (Buffer.isBuffer(matchingCred.publicKey)) {
+      publicKeyBuffer = matchingCred.publicKey;
+    } else if (typeof matchingCred.publicKey === 'string') {
+      publicKeyBuffer = Buffer.from(matchingCred.publicKey, 'base64url');
+    } else if (matchingCred.publicKey && matchingCred.publicKey.type === 'Buffer' && Array.isArray(matchingCred.publicKey.data)) {
+      publicKeyBuffer = Buffer.from(matchingCred.publicKey.data);
+    } else {
+      console.error('[verifyWebauthn] Invalid publicKey format:', matchingCred.publicKey);
+      return res.status(500).json({ error: 'Invalid publicKey format' });
+    }
+    // 7. Verify assertion
     const verification = await verifyAuthenticationResponse({
       response: assertionResp,
       expectedChallenge,
@@ -65,9 +77,7 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
       credential: {
         id: isoBase64URL.fromBuffer(matchingCred.credentialID),
-        publicKey: Buffer.isBuffer(matchingCred.publicKey)
-          ? matchingCred.publicKey
-          : Buffer.from(matchingCred.publicKey, 'base64url'),
+        publicKey: publicKeyBuffer,
         counter: matchingCred.counter,
         transports: matchingCred.transports || [],
       },
@@ -76,11 +86,11 @@ export default async function verifyWebauthn(req: Request, res: Response, next: 
       console.warn('[verifyWebauthn] WebAuthn verification failed for user:', user._id);
       return res.status(403).json({ error: 'WebAuthn verification failed' });
     }
-    // 7. Update counter
+    // 8. Update counter
     matchingCred.counter = verification.authenticationInfo.newCounter;
     await user.save();
     delete challengeStore[user._id];
-    // 8. Continue
+    // 9. Continue
     next();
   } catch (e: any) {
     console.error('[verifyWebauthn] Middleware error:', e);

@@ -34,4 +34,16 @@ router.post('/validate-password-code', async (req, res) => {
   }
 });
 
+// GET /api/validate-user-valid-member/:id
+router.get('/validate-user-valid-member/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ valid: false, error: 'User not found' });
+    res.json({ valid: true, validMember: !!user.validMember });
+  } catch (e) {
+    res.status(500).json({ valid: false, error: 'Server error' });
+  }
+});
+
 export default router;

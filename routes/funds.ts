@@ -77,7 +77,7 @@ function getStyledEmailHtml(subject: string, body: string) {
 router.post('/convert', authenticateToken, conditionalWebauthn('convert'), async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const { direction, amount } = req.body;
-    const CONVERT_RATE = 500;
+    const CONVERT_RATE = 1;
     if (!direction || !amount || isNaN(amount) || amount <= 0) {
         res.status(400).json({ error: 'Invalid conversion request' });
         return;
@@ -89,6 +89,7 @@ router.post('/convert', authenticateToken, conditionalWebauthn('convert'), async
             res.status(404).json({ error: 'User not found' });
             return;
         }
+        // FLEX_TO_USDT
         if (direction === 'FLEX_TO_USDT') {
             if (user.flexBalance == null || user.flexBalance < amount) {
                 res.status(400).json({ error: 'Insufficient FLEX balance' });
@@ -100,9 +101,35 @@ router.post('/convert', authenticateToken, conditionalWebauthn('convert'), async
             user.recentTransactions.push({ type: 'Convert', amount, currency: 'USDT', date: new Date(), note: `Converted ${amount} FLEX to ${amount * CONVERT_RATE} USDT` });
             await user.save();
             res.json({ message: `Converted ${amount} FLEX to ${amount * CONVERT_RATE} USDT.`, usdtBalance: user.usdtBalance, flexBalance: user.flexBalance });
-        } else {
-            res.status(400).json({ error: 'Only FLEX to USDT conversion is allowed.' });
+            return;
         }
+        // USDT_TO_SPOT (if present)
+        if (direction === 'USDT_TO_SPOT') {
+            if (user.usdtBalance < amount) {
+                res.status(400).json({ error: 'Insufficient USDT balance' });
+                return;
+            }
+            user.usdtBalance -= amount;
+            user.spotBalance += amount / CONVERT_RATE;
+            user.recentTransactions.push({ type: 'Convert', amount: amount / CONVERT_RATE, currency: 'SPOT', date: new Date() });
+            await user.save();
+            res.json({ message: `Converted ${amount} USDT to ${amount / CONVERT_RATE} SPOT.`, usdtBalance: user.usdtBalance, spotBalance: user.spotBalance });
+            return;
+        }
+        // SPOT_TO_USDT (if present)
+        if (direction === 'SPOT_TO_USDT') {
+            if (user.spotBalance < amount) {
+                res.status(400).json({ error: 'Insufficient SPOT balance' });
+                return;
+            }
+            user.spotBalance -= amount;
+            user.usdtBalance += amount * CONVERT_RATE;
+            user.recentTransactions.push({ type: 'Convert', amount, currency: 'USDT', date: new Date() });
+            await user.save();
+            res.json({ message: `Converted ${amount} SPOT to ${amount * CONVERT_RATE} USDT.`, usdtBalance: user.usdtBalance, spotBalance: user.spotBalance });
+            return;
+        }
+        res.status(400).json({ error: 'Invalid conversion direction' });
     } catch (err) {
         console.error('[CONVERT] Error:', err);
         res.status(500).json({ error: 'Conversion failed' });

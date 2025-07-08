@@ -276,7 +276,7 @@ app.post('/api/convert', authenticateToken, function (req, res) { return __await
             case 0:
                 userId = req.user.userId;
                 _a = req.body, direction = _a.direction, amount = _a.amount;
-                CONVERT_RATE = 500;
+                CONVERT_RATE = 1;
                 if (!direction || !amount || isNaN(amount) || amount <= 0) {
                     res.status(400).json({ error: 'Invalid conversion request' });
                     return [2 /*return*/];
@@ -291,34 +291,28 @@ app.post('/api/convert', authenticateToken, function (req, res) { return __await
                     res.status(404).json({ error: 'User not found' });
                     return [2 /*return*/];
                 }
-                if (!(direction === 'USDT_TO_SPOT')) return [3 /*break*/, 4];
-                if (user.usdtBalance < amount) {
-                    res.status(400).json({ error: 'Insufficient USDT balance' });
-                    return [2 /*return*/];
+                // USDT_TO_SPOT
+                if (direction === 'USDT_TO_SPOT') {
+                    if (user.usdtBalance < amount) {
+                        res.status(400).json({ error: 'Insufficient USDT balance' });
+                        return [2 /*return*/];
+                    }
+                    user.usdtBalance -= amount;
+                    user.spotBalance += amount / CONVERT_RATE;
+                    user.recentTransactions.push({ type: 'Convert', amount: amount / CONVERT_RATE, currency: 'SPOT', date: new Date() });
+                    return [4 /*yield*/, user.save()];
                 }
-                user.usdtBalance -= amount;
-                user.spotBalance += amount / CONVERT_RATE;
-                user.recentTransactions.push({ type: 'Convert', amount: amount / CONVERT_RATE, currency: 'SPOT', date: new Date() });
-                return [4 /*yield*/, user.save()];
-            case 3:
-                _b.sent();
-                res.json({ message: "Converted ".concat(amount, " USDT to ").concat((amount / CONVERT_RATE), " SPOT."), usdtBalance: user.usdtBalance, spotBalance: user.spotBalance });
-                return [3 /*break*/, 7];
-            case 4:
-                if (!(direction === 'SPOT_TO_USDT')) return [3 /*break*/, 6];
-                if (user.spotBalance < amount) {
-                    res.status(400).json({ error: 'Insufficient SPOT balance' });
-                    return [2 /*return*/];
+                // SPOT_TO_USDT
+                if (direction === 'SPOT_TO_USDT') {
+                    if (user.spotBalance < amount) {
+                        res.status(400).json({ error: 'Insufficient SPOT balance' });
+                        return [2 /*return*/];
+                    }
+                    user.spotBalance -= amount;
+                    user.usdtBalance += amount * CONVERT_RATE;
+                    user.recentTransactions.push({ type: 'Convert', amount: amount, currency: 'USDT', date: new Date() });
+                    return [4 /*yield*/, user.save()];
                 }
-                user.spotBalance -= amount;
-                user.usdtBalance += amount * CONVERT_RATE;
-                user.recentTransactions.push({ type: 'Convert', amount: amount, currency: 'USDT', date: new Date() });
-                return [4 /*yield*/, user.save()];
-            case 5:
-                _b.sent();
-                res.json({ message: "Converted ".concat(amount, " SPOT to ").concat(amount * CONVERT_RATE, " USDT."), usdtBalance: user.usdtBalance, spotBalance: user.spotBalance });
-                return [3 /*break*/, 7];
-            case 6:
                 res.status(400).json({ error: 'Invalid conversion direction' });
                 _b.label = 7;
             case 7: return [3 /*break*/, 9];

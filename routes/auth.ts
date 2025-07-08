@@ -55,7 +55,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
 // --- Login ---
 router.post('/login', async (req: Request, res: Response) => {
-    const { email, password, twoFAToken, device, assertionResp } = req.body;
+    const { email, password, twoFAToken, device } = req.body;
     const user = await User.findOne({ email });
     if (!user || !user.password) {
         res.status(400).json({ error: 'Invalid credentials' });
@@ -82,35 +82,6 @@ router.post('/login', async (req: Request, res: Response) => {
             res.status(401).json({ error: 'Invalid 2FA code' });
             return;
         }
-    }
-    // WebAuthn check (if user has credentials)
-    if (user.webauthnCredentials && user.webauthnCredentials.length > 0) {
-        if (!assertionResp) {
-            return res.status(401).json({ error: 'WebAuthn required', webauthn: true });
-        }
-        // Import verifyAuthenticationResponse and isoBase64URL
-        const { verifyAuthenticationResponse } = require('@simplewebauthn/server');
-        const { isoBase64URL } = require('@simplewebauthn/server/helpers');
-        // Use the same challenge store as in your middleware (should be shared in production)
-        const challengeStore = require('../middleware/verifyWebauthn').challengeStore || {};
-        const expectedChallenge = challengeStore[user._id];
-        if (!expectedChallenge) return res.status(400).json({ error: 'No challenge found' });
-        const verification = await verifyAuthenticationResponse({
-            response: assertionResp,
-            expectedChallenge,
-            expectedOrigin: process.env.WEBAUTHN_ORIGIN,
-            expectedRPID: process.env.WEBAUTHN_RPID || 'localhost',
-            credential: {
-                id: isoBase64URL.fromBuffer(user.webauthnCredentials[0].credentialID),
-                publicKey: user.webauthnCredentials[0].publicKey,
-                counter: user.webauthnCredentials[0].counter,
-                transports: user.webauthnCredentials[0].transports || [],
-            },
-        });
-        if (!verification.verified) return res.status(403).json({ error: 'WebAuthn verification failed' });
-        user.webauthnCredentials[0].counter = verification.authenticationInfo.newCounter;
-        await user.save();
-        delete challengeStore[user._id];
     }
     const tokenId = new mongoose.Types.ObjectId().toString();
     const token = jwt.sign({ userId: user._id, email: user.email, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });

@@ -167,4 +167,18 @@ router.get('/team-members/:id', authenticateToken, async (req: Request, res: Res
     }
 });
 
+// --- ADMIN: TOGGLE VALID MEMBER ---
+router.post('/users/:id/toggle-valid-member', authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+        const user = await User.findById(id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        user.validMember = !user.validMember;
+        await user.save();
+        res.json({ validMember: user.validMember });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to toggle valid member status' });
+    }
+});
+
 export default router;

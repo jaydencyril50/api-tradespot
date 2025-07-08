@@ -15,8 +15,8 @@ router.get('/settings', authenticateToken, async (req, res) => {
 // Update (toggle) WebAuthn for a specific action
 router.post('/settings', authenticateToken, async (req, res) => {
   const userId = (req as any).user.userId;
-  const { action, enabled } = req.body; // action: 'login' | 'transfer' | 'withdraw' | 'convert'
-  if (!['login', 'transfer', 'withdraw', 'convert'].includes(action)) {
+  const { action, enabled } = req.body; // action: 'transfer' | 'withdraw' | 'convert'
+  if (!['transfer', 'withdraw', 'convert'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
   }
   const user = await User.findById(userId);

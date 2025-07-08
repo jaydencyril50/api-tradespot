@@ -26,7 +26,6 @@ export interface UserDocument extends Document {
     isAdmin: boolean;
     webauthnCredentials: Types.DocumentArray<WebAuthnCredential>;
     webauthnSettings: {
-        login: boolean;
         transfer: boolean;
         withdraw: boolean;
         convert: boolean;
@@ -110,7 +109,6 @@ const userSchema = new mongoose.Schema({
         default: []
     },
     webauthnSettings: {
-        login: { type: Boolean, default: false },
         transfer: { type: Boolean, default: false },
         withdraw: { type: Boolean, default: false },
         convert: { type: Boolean, default: false }

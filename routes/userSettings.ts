@@ -155,14 +155,14 @@ router.post('/send-email-verification', authenticateToken, async (req: Request, 
 
 router.post('/change-email', authenticateToken, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    const { newEmail, spotid } = req.body;
+    const { newEmail, password } = req.body;
     const user = await User.findById(userId);
     if (!user || typeof user.email !== 'string') {
         res.status(404).json({ error: 'User not found' });
         return;
     }
-    if (user.spotid !== spotid) {
-        res.status(400).json({ error: 'Invalid spotid' });
+    if (!password || !(await bcrypt.compare(password, user.password))) {
+        res.status(400).json({ error: 'Invalid password' });
         return;
     }
     const existing = await User.findOne({ email: newEmail });
@@ -210,18 +210,18 @@ router.post('/send-wallet-verification', authenticateToken, async (req: Request,
 
 router.post('/change-wallet', authenticateToken, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    const { newWallet, code, spotid, twoFAToken } = req.body;
+    const { newWallet, code, password, twoFAToken } = req.body;
     const user = await User.findById(userId);
     if (!user || typeof user.email !== 'string') {
         res.status(404).json({ error: 'User not found' });
         return;
     }
-    if (!newWallet || !code || !spotid || !twoFAToken) {
-        res.status(400).json({ error: 'newWallet, code, spotid, and twoFAToken are required' });
+    if (!newWallet || !code || !password || !twoFAToken) {
+        res.status(400).json({ error: 'newWallet, code, password, and twoFAToken are required' });
         return;
     }
-    if (user.spotid !== spotid) {
-        res.status(400).json({ error: 'Invalid spotid' });
+    if (!password || !(await bcrypt.compare(password, user.password))) {
+        res.status(400).json({ error: 'Invalid password' });
         return;
     }
     let secret = '';

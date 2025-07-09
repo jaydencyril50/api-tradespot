@@ -40,34 +40,32 @@ function getVerificationEmailBody(fullName: string, code: string, action: string
       <p style="font-size:1.15rem;margin-bottom:18px;margin-top:0;">Hello <b>${fullName}</b>,</p>
       <p style="font-size:1.08rem;margin-bottom:22px;margin-top:0;">You recently requested to update your <b>${action}</b>.<br/>Please use the verification code below to continue:</p>
       <div style="margin:24px auto 24px auto;max-width:220px;text-align:center;">
-        <span style="display:inline-block;font-size:2.2rem;font-weight:700;color:#008066;border:1.5px solid #008066;padding:18px 32px;border-radius:12px;background:#ededed;letter-spacing:2px;">${code}</span>
+        <span style="display:inline-block;font-size:2.2rem;font-weight:700;color:#008066;border:1.5px solid #008066;padding:18px 32px;background:#ededed;letter-spacing:2px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">${code}</span>
       </div>
     </div>
   `;
 }
 
 export function getStyledEmailHtml(subject: string, body: string) {
-  // Simplified, smaller HTML email template
   return `
-    <div style="background:#f7f7f7;padding:0;margin:0;font-family:sans-serif;">
-      <div style="max-width:600px;margin:24px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px #0001;">
-        <div style="background:#008066;padding:20px 0;text-align:center;">
-          <span style="font-size:2rem;font-weight:700;color:#fff;">TRADESPOT</span>
+    <div style="background:#f3f4f6;padding:0;margin:0;font-family:'Inter','Segoe UI',sans-serif;">
+      <div style="max-width:600px;margin:24px auto;background:#ffffff;box-shadow:0 4px 18px rgba(0,0,0,0.08);">
+        <div style="background:linear-gradient(90deg, #00664d, #00997a);padding:20px 0;text-align:center;">
+          <span style="font-size:2rem;font-weight:800;color:#ffffff;letter-spacing:1px;">TRADESPOT</span>
         </div>
-        <div style="padding:24px 18px 18px 18px;">
+        <div style="padding:28px 24px;text-align:center;">
           ${body}
         </div>
-        <div style="padding:12px 18px 0 18px;font-size:0.95rem;color:#555;text-align:center;">
+        <div style="padding:16px 24px 0 24px;font-size:0.95rem;color:#4b5563;text-align:center;">
           <span>If you did not request this change, please disregard this message.</span>
         </div>
-        <div style="background:#333;padding:12px 0;text-align:center;border-radius:0 0 8px 8px;">
-          <span style="font-size:0.95rem;color:#fff;">© 2025 TradeSpot</span>
+        <div style="background:#1e293b;padding:14px 0;text-align:center;">
+          <span style="font-size:0.9rem;color:#e2e8f0;">© 2025 TradeSpot Global Ltd</span>
         </div>
       </div>
     </div>
   `;
 }
-
 
 // --- NAME CHANGE ---
 router.post('/send-name-verification', authenticateToken, async (req: Request, res: Response) => {

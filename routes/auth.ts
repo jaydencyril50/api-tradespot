@@ -7,7 +7,6 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import User from '../models/User';
 import webauthnRouter from './webauthn';
-import webauthnSettingsRouter from './webauthnSettings';
 import authenticateToken from '../middleware/authenticateToken';
 
 const router = express.Router();
@@ -307,6 +306,4 @@ router.get('/user/me', authenticateToken, async (req, res) => {
 });
 
 router.use('/webauthn', webauthnRouter);
-router.use('/webauthn-settings', webauthnSettingsRouter);
-
 export default router;

@@ -215,7 +215,9 @@ router.get('/google/callback',
             user.sessions.push({ tokenId, device: 'google-oauth', issuedAt: new Date() });
             await user.save();
             console.log('[Google OAuth] Login success, redirecting with token:', token);
-            res.redirect(`https://www.tradespot.online/login?token=${token}`);
+            // Add twoFAEnabled flag to redirect URL if enabled
+            const twoFAEnabled = user.twoFA && user.twoFA.enabled ? 'true' : 'false';
+            res.redirect(`https://www.tradespot.online/login?token=${token}&twoFAEnabled=${twoFAEnabled}`);
         } catch (err) {
             console.error('[Google OAuth] Error during Google login callback:', err);
             return res.redirect('https://www.tradespot.online/login?error=server_error');

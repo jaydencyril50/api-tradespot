@@ -34,33 +34,68 @@ function verifyCode(globalKey: string, email: string, inputCode: string): boolea
     return true;
 }
 
-// --- EMAIL STYLING UTILITY (copy or import if needed) ---
-function getStyledEmailHtml(subject: string, body: string) {
+export function getStyledEmailHtml(subject: string, body: string) {
   return `
-    <div style="background-color:#f4f6fb;padding:0;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f6fb;margin:0;padding:0;">
+    <div style="margin: 0; padding: 0; background: #f3f4f6; font-family: 'Inter', 'Segoe UI', sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
         <tr>
-          <td align="center" style="padding:40px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e0e6ed;box-shadow:0 10px 30px rgba(18,38,63,0.1);text-align:center;">
+          <td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);">
+
+              <!-- Header with Logo -->
               <tr>
-                <td style="background:#1e3c72;padding:20px 16px;text-align:center;border-top-left-radius:12px;border-top-right-radius:12px;">
-                  <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:1px;">TRADESPOT</h1>
+                <td style="text-align: center; padding: 24px 0; background-color: #f9fafb; border-bottom: 1px solid #e2e8f0;">
+                  <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a;">TRADESPOT</h1>
                 </td>
               </tr>
+
+              <!-- Illustration -->
               <tr>
-                <td style="padding:32px 24px 16px 24px;text-align:center;">
-                  <h2 style="font-size:20px;color:#1e3c72;font-weight:700;margin:0 0 16px 0;">${subject}</h2>
-                  <p style="font-size:16px;line-height:1.6;color:#3a3a3a;margin:0;">
-                    ${body}
-                  </p>
+                <td style="text-align: center; padding: 32px 24px 16px;">
+                  <img src="https://img.icons8.com/color/96/000000/privacy.png" alt="Security Icon" style="max-width: 96px;">
                 </td>
               </tr>
+
+              <!-- Email Subject & Code Body -->
               <tr>
-                <td style="padding:24px;text-align:center;font-size:13px;color:#8c94a4;border-top:1px solid #e6eaf0;">
-                  <p style="margin:0;">If you did not request this email, you can safely ignore it.</p>
-                  <p style="margin:4px 0 0 0;font-weight:600;color:#1e3c72;">— Tradespot Security Team</p>
+                <td style="padding: 0 32px 8px; text-align: center;">
+                  <h2 style="font-size: 20px; color: #0f172a; margin-bottom: 12px;">\${subject}</h2>
+                  <p style="font-size: 15px; color: #334155; line-height: 1.6;">\${body}</p>
                 </td>
               </tr>
+
+              <!-- One-Time Code Box -->
+              <tr>
+                <td style="text-align: center; padding: 8px 32px 32px;">
+                  <div style="display: inline-block; background-color: #f1f5f9; color: #0f172a; padding: 12px 24px; border-radius: 10px; font-size: 22px; font-weight: 700; letter-spacing: 4px;">\${subject.match(/\d{4,6}/)?.[0] || '123456'}</div>
+                </td>
+              </tr>
+
+              <!-- Support Info -->
+              <tr>
+                <td style="padding: 0 32px 16px; text-align: center; font-size: 13px; color: #475569;">
+                  <p style="margin: 0;">Need help? Email us at <a href="mailto:help@tradespot.online" style="color: #1d4ed8; font-weight: 500;">help@tradespot.online</a></p>
+                  <p style="margin: 4px 0 0;">or call 1 (800) 555-TRDS</p>
+                </td>
+              </tr>
+
+              <!-- Social Links -->
+              <tr>
+                <td style="text-align: center; padding: 8px 0 0;">
+                  <a href="#" style="margin: 0 8px;"><img src="https://img.icons8.com/ios-filled/24/1d4ed8/facebook--v1.png" alt="Facebook"></a>
+                  <a href="#" style="margin: 0 8px;"><img src="https://img.icons8.com/ios-filled/24/1d4ed8/instagram-new.png" alt="Instagram"></a>
+                  <a href="#" style="margin: 0 8px;"><img src="https://img.icons8.com/ios-filled/24/1d4ed8/twitter.png" alt="Twitter"></a>
+                </td>
+              </tr>
+
+              <!-- Legal Footer -->
+              <tr>
+                <td style="text-align: center; font-size: 11px; color: #94a3b8; padding: 16px 32px 28px;">
+                  <p style="margin: 0;">© 2025 TradeSpot Global Ltd. All rights reserved.</p>
+                  <p style="margin: 4px 0 0;"><a href="#" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a></p>
+                </td>
+              </tr>
+
             </table>
           </td>
         </tr>
@@ -68,6 +103,7 @@ function getStyledEmailHtml(subject: string, body: string) {
     </div>
   `;
 }
+
 
 // --- NAME CHANGE ---
 router.post('/send-name-verification', authenticateToken, async (req: Request, res: Response) => {

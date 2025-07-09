@@ -34,6 +34,18 @@ function verifyCode(globalKey: string, email: string, inputCode: string): boolea
     return true;
 }
 
+function getVerificationEmailBody(fullName: string, code: string, action: string) {
+  return `
+    <div style="text-align:center;">
+      <p style="font-size:1.15rem;margin-bottom:18px;margin-top:0;">Hello <b>${fullName}</b>,</p>
+      <p style="font-size:1.08rem;margin-bottom:22px;margin-top:0;">You recently requested to update your <b>${action}</b>.<br/>Please use the verification code below to continue:</p>
+      <div style="margin:24px auto 24px auto;max-width:220px;text-align:center;">
+        <span style="display:inline-block;font-size:2.2rem;font-weight:700;color:#008066;border:1.5px solid #008066;padding:18px 32px;border-radius:12px;background:#ededed;letter-spacing:2px;">${code}</span>
+      </div>
+    </div>
+  `;
+}
+
 export function getStyledEmailHtml(subject: string, body: string) {
   return `
     <div style="background:#f7f7f7;padding:0;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;">
@@ -52,7 +64,7 @@ export function getStyledEmailHtml(subject: string, body: string) {
                 </td>
               </tr>
               <tr>
-                <td style="background:#fff;padding:24px 32px 0 32px;font-size:1rem;color:#555;">
+                <td style="background:#fff;padding:24px 32px 0 32px;font-size:1rem;color:#555;text-align:center;">
                   <span style="font-size:0.98rem;color:#555;">If you did not request this email change, please disregard this message.</span>
                 </td>
               </tr>
@@ -94,7 +106,7 @@ router.post('/send-name-verification', authenticateToken, async (req: Request, r
             subject: 'Your Name Change Verification Code',
             html: getStyledEmailHtml(
               'Name Change Verification',
-              `Your verification code is: <b style="font-size:20px;color:#1e3c72;">${code}</b>`
+              getVerificationEmailBody(user.fullName, code, 'name')
             )
         });
         res.json({ message: 'Verification code sent' });
@@ -145,7 +157,7 @@ router.post('/send-email-verification', authenticateToken, async (req: Request, 
             subject: 'Your Email Change Verification Code',
             html: getStyledEmailHtml(
               'Email Change Verification',
-              `Your email change verification code is: <b style="font-size:20px;color:#1e3c72;">${code}</b>`
+              getVerificationEmailBody(user.fullName, code, 'email')
             )
         });
         res.json({ message: 'Verification code sent' });
@@ -205,7 +217,7 @@ router.post('/send-wallet-verification', authenticateToken, async (req: Request,
             subject: 'Wallet Change Verification Code',
             html: getStyledEmailHtml(
               'Wallet Change Verification',
-              `Your wallet change verification code is: <b style=\"font-size:20px;color:#1e3c72;\">${code}</b>`
+              getVerificationEmailBody(user.fullName, code, 'wallet')
             )
         });
         res.json({ message: 'Verification code sent' });
@@ -287,7 +299,7 @@ router.post('/send-password-verification', authenticateToken, async (req: Reques
             subject: 'Password Change Verification Code',
             html: getStyledEmailHtml(
               'Password Change Verification',
-              `Your password change verification code is: <b style=\"font-size:20px;color:#1e3c72;\">${code}</b>`
+              getVerificationEmailBody(user.fullName, code, 'password')
             )
         });
         res.json({ message: 'Verification code sent' });

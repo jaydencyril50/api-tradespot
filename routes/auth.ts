@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import User from '../models/User';
 import webauthnRouter from './webauthn';
 import authenticateToken from '../middleware/authenticateToken';
+import { getWelcomeEmailBody, getStyledEmailHtml } from '../utils/emailTemplates';
 
 const router = express.Router();
 
@@ -49,6 +50,27 @@ router.post('/register', async (req: Request, res: Response) => {
     await user.save();
     referrer.teamMembers.push({ userId: user._id as mongoose.Types.ObjectId, joinedAt: new Date() });
     await referrer.save();
+
+    // Send welcome email
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Welcome to TradeSpot!',
+            html: getStyledEmailHtml('Welcome to TradeSpot!', getWelcomeEmailBody(fullName))
+        });
+    } catch (err) {
+        // Log but do not block registration if email fails
+        console.error('Failed to send welcome email:', err);
+    }
+
     res.json({ message: 'User registered successfully', referralCode, spotid });
 });
 
@@ -188,7 +210,7 @@ router.get('/google/callback',
 );
 
 // --- Password Reset Request ---
-function getStyledEmailHtml(subject: string, body: string) {
+function getPasswordResetEmailHtml(subject: string, body: string) {
   return `
     <div style="background-color:#f4f6fb;padding:0;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f6fb;margin:0;padding:0;">
@@ -244,7 +266,7 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
     const body = `You requested a password reset for your TradeSpot account.<br><br>
       <a href="${resetUrl}" style="display:inline-block;padding:12px 28px;background:#1e3c72;color:#fff;font-weight:700;font-size:16px;border-radius:6px;text-decoration:none;margin:18px 0 12px 0;">Reset Password</a><br>
       <span style="color:#8c94a4;font-size:14px;">This link will expire in 30 minutes. If you did not request this, please ignore this email.</span>`;
-    const html = getStyledEmailHtml(subject, body);
+    const html = getPasswordResetEmailHtml(subject, body);
 
     const transporter = nodemailer.createTransport({
         service: 'gmail',

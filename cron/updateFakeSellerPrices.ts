@@ -10,8 +10,10 @@ export async function updateFakeSellerPrices() {
     const marketPrice = await fetchMarketPrice();
     const sellers = await SellerModel.find({});
     for (const seller of sellers) {
-      // Random percent between 1% and 2% ABOVE market
-      const percent = 1 + Math.random() * 1; // 1% to 2%
+      let percent;
+      if (seller.vipLevel === 1) percent = 2.0;
+      else if (seller.vipLevel === 2) percent = 2.3;
+      else percent = 3.2;
       const newPrice = +(marketPrice * (1 + percent / 100)).toFixed(2);
       seller.price = newPrice;
       await seller.save();

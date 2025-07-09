@@ -10,10 +10,7 @@ export async function updateFakeBuyerPrices() {
     const marketPrice = await fetchMarketPrice();
     const buyers = await BuyerModel.find({});
     for (const buyer of buyers) {
-      // Random percent between 1% and 2% BELOW market
-      const percent = 1 + Math.random() * 1; // 1% to 2%
-      const newPrice = +(marketPrice * (1 - percent / 100)).toFixed(2);
-      buyer.price = newPrice;
+      buyer.price = marketPrice;
       await buyer.save();
     }
     console.log(`[FakeBuyerCron] Updated ${buyers.length} buyers' prices (market: ${marketPrice})`);

@@ -82,6 +82,10 @@ router.post('/login', async (req: Request, res: Response) => {
         res.status(400).json({ error: 'Invalid credentials' });
         return;
     }
+    if (user.banned) {
+        res.status(403).json({ error: 'Account is banned. Contact support.' });
+        return;
+    }
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
         res.status(400).json({ error: 'Invalid credentials' });
@@ -325,6 +329,24 @@ router.get('/user/me', authenticateToken, async (req, res) => {
         webauthnCredentials: user.webauthnCredentials || [],
         // add any other fields you want to expose
     });
+});
+
+// --- Admin: Ban/Unban User by Email ---
+router.post('/admin/ban', async (req: Request, res: Response) => {
+    const { email, ban } = req.body;
+    // Only allow admin to perform this action
+    const adminId = (req as any).user?.userId;
+    const admin = await User.findById(adminId);
+    if (!admin || !admin.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    user.banned = !!ban;
+    await user.save();
+    res.json({ message: `User ${ban ? 'banned' : 'unbanned'} successfully.` });
 });
 
 router.use('/webauthn', webauthnRouter);

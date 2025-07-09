@@ -105,6 +105,7 @@ const userSchema = new mongoose.Schema({
     flexProfitActive: { type: Boolean, default: false },
     flexProfitUsdtRecord: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false }, // New field for admin users
+    banned: { type: Boolean, default: false }, // Add banned field
     webauthnCredentials: {
         type: [WebAuthnCredentialSchema],
         default: []

@@ -198,6 +198,9 @@ router.get('/google/callback',
             if (!user) {
                 return res.redirect('https://www.tradespot.online/login?error=not_registered');
             }
+            if (user.banned) {
+                return res.redirect('https://www.tradespot.online/login?error=banned');
+            }
             const tokenId = new mongoose.Types.ObjectId().toString();
             const token = jwt.sign({ userId: user._id, email: user.email, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });
             user.sessions = user.sessions || [];

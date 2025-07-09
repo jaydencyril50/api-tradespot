@@ -157,6 +157,10 @@ app.get('/auth/google/callback',
         // Do NOT create a new user. Only allow login for existing users.
         return res.redirect('https://www.tradespot.online/login?error=not_registered');
       }
+      if (user.banned) {
+        console.warn('[Google OAuth] Banned user attempted Google login:', email);
+        return res.redirect('https://www.tradespot.online/login?error=banned');
+      }
       // Generate JWT token with unique jti
       const tokenId = new mongoose.Types.ObjectId().toString();
       const token = jwt.sign({ userId: user._id, email: user.email, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });

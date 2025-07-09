@@ -48,19 +48,20 @@ function getVerificationEmailBody(fullName: string, code: string, action: string
 
 export function getStyledEmailHtml(subject: string, body: string) {
   return `
-    <div style="background:#f3f4f6;padding:0;margin:0;font-family:'Inter','Segoe UI',sans-serif;">
-      <div style="max-width:600px;margin:24px auto;background:#ffffff;box-shadow:0 4px 18px rgba(0,0,0,0.08);">
-        <div style="background:linear-gradient(90deg, #00664d, #00997a);padding:20px 0;text-align:center;">
-          <span style="font-size:2rem;font-weight:800;color:#ffffff;letter-spacing:1px;">TRADESPOT</span>
+    <div style="background:#0f172a;padding:0;margin:0;font-family:'Inter','Segoe UI',sans-serif;">
+      <div style="max-width:600px;margin:24px auto;background:#1e293b;box-shadow:0 4px 18px rgba(0,0,0,0.5);">
+        <div style="background:#0f172a;padding:24px 0;text-align:center;border-bottom:1px solid #1f2937;">
+          <img src=\"https://www.tradespot.online/images/logo.png\" alt=\"TradeSpot Logo\" width=\"64\" height=\"64\" style=\"display:block;margin:0 auto 12px;\">
+          <span style="font-size:1.8rem;font-weight:800;color:#10b981;letter-spacing:1px;">TRADESPOT</span>
         </div>
         <div style="padding:28px 24px;text-align:center;">
           ${body}
         </div>
-        <div style="padding:16px 24px 0 24px;font-size:0.95rem;color:#4b5563;text-align:center;">
+        <div style="padding:16px 24px 0 24px;font-size:0.95rem;color:#94a3b8;text-align:center;">
           <span>If you did not request this change, please disregard this message.</span>
         </div>
-        <div style="background:#1e293b;padding:14px 0;text-align:center;">
-          <span style="font-size:0.9rem;color:#e2e8f0;">© 2025 TradeSpot Global Ltd</span>
+        <div style="background:#0f172a;padding:14px 0;text-align:center;">
+          <span style="font-size:0.9rem;color:#64748b;">© 2025 TradeSpot Global Ltd</span>
         </div>
       </div>
     </div>

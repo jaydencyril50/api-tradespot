@@ -181,4 +181,38 @@ router.post('/users/:id/toggle-valid-member', authenticateToken, async (req: Req
     }
 });
 
+// --- ADMIN: APPROVE DEPOSIT ---
+router.post('/deposits/:id/approve', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const deposit = await DepositSession.findById(req.params.id);
+        if (!deposit) return res.status(404).json({ error: 'Deposit not found' });
+        if (deposit.status === 'approved') {
+            return res.status(400).json({ error: 'Deposit already approved' });
+        }
+        deposit.status = 'approved';
+        deposit.updatedAt = new Date();
+        await deposit.save();
+        const user = await User.findById(deposit.userId);
+        if (user) {
+            user.flexBalance = (user.flexBalance || 0) + (deposit.amount ?? 0);
+            user.recentTransactions = user.recentTransactions || [];
+            user.recentTransactions.push({
+                type: 'Deposit',
+                amount: deposit.amount ?? 0,
+                currency: 'FLEX',
+                date: new Date(),
+                note: 'Deposit approved by admin'
+            });
+            await user.save();
+        }
+        await Notification.create({
+            userId: deposit.userId,
+            message: `Deposit of ${deposit.amount} FLEX approved and credited.`
+        });
+        res.json({ message: 'Deposit approved and credited to FLEX balance' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to approve deposit' });
+    }
+});
+
 export default router;

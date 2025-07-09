@@ -348,5 +348,35 @@ router.post('/verify-2fa', authenticateToken, async (req: Request, res: Response
     return res.json({ success: true });
 });
 
+// --- Google 2FA Verification ---
+router.post('/google/2fa', async (req: Request, res: Response) => {
+    const { token, code } = req.body;
+    if (!token || !code) {
+        return res.status(400).json({ error: 'Token and 2FA code are required.' });
+    }
+    try {
+        // Verify JWT token to get userId
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        if (!user || !user.twoFA || !user.twoFA.secret) {
+            return res.status(400).json({ error: '2FA is not set up for this account' });
+        }
+        const speakeasy = require('speakeasy');
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFA.secret,
+            encoding: 'base32',
+            token: code,
+            window: 1
+        });
+        if (!verified) {
+            return res.status(401).json({ error: 'Invalid 2FA code' });
+        }
+        // Success: return the same token (or a new one if you want)
+        return res.json({ token });
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+});
+
 router.use('/webauthn', webauthnRouter);
 export default router;

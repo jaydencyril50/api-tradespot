@@ -245,9 +245,9 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
     // Styled email
     const resetUrl = `${process.env.FRONTEND_URL || 'https://www.tradespot.online'}/reset-password?token=${token}`;
     const subject = 'Password Reset Request';
-    const body = `You requested a password reset for your TradeSpot account.<br><br>
+    const body = `<div style="color:#e2e8f0;">You requested a password reset for your TradeSpot account.<br><br>
       <a href="${resetUrl}" style="display:inline-block;padding:12px 28px;background:#1e3c72;color:#fff;font-weight:700;font-size:16px;border-radius:6px;text-decoration:none;margin:18px 0 12px 0;">Reset Password</a><br>
-      <span style="color:#8c94a4;font-size:14px;">This link will expire in 30 minutes. If you did not request this, please ignore this email.</span>`;
+      <span style="color:#8c94a4;font-size:14px;">This link will expire in 30 minutes. If you did not request this, please ignore this email.</span></div>`;
     const html = getStyledEmailHtml(subject, body);
 
     const transporter = nodemailer.createTransport({
@@ -325,6 +325,27 @@ router.post('/admin/ban', authenticateToken, async (req: Request, res: Response)
     user.banned = !!ban;
     await user.save();
     res.json({ message: `User ${ban ? 'banned' : 'unbanned'} successfully.` });
+});
+
+// --- Google/Token 2FA Verification ---
+router.post('/verify-2fa', authenticateToken, async (req: Request, res: Response) => {
+    const userId = (req as any).user.userId;
+    const { code } = req.body;
+    const user = await User.findById(userId);
+    if (!user || !user.twoFA || !user.twoFA.secret) {
+        return res.status(400).json({ error: '2FA is not set up for this account' });
+    }
+    const speakeasy = require('speakeasy');
+    const verified = speakeasy.totp.verify({
+        secret: user.twoFA.secret,
+        encoding: 'base32',
+        token: code,
+        window: 1
+    });
+    if (!verified) {
+        return res.status(401).json({ error: 'Invalid 2FA code' });
+    }
+    return res.json({ success: true });
 });
 
 router.use('/webauthn', webauthnRouter);

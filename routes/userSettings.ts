@@ -47,36 +47,23 @@ function getVerificationEmailBody(fullName: string, code: string, action: string
 }
 
 export function getStyledEmailHtml(subject: string, body: string) {
+  // Simplified, smaller HTML email template
   return `
-    <div style="background:#f7f7f7;padding:0;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f7f7f7;margin:0;padding:0;">
-        <tr>
-          <td align="center" style="padding:0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:900px;background:#fff;border-radius:10px 10px 0 0;overflow:hidden;text-align:left;">
-              <tr>
-                <td style="background:#008066;padding:32px 0 24px 0;text-align:center;border-radius:10px 10px 0 0;">
-                  <span style="font-size:2.5rem;font-weight:700;color:#fff;letter-spacing:1px;">TRADESPOT</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="background:#f7f7f7;padding:40px 32px 32px 32px;">
-                  ${body}
-                </td>
-              </tr>
-              <tr>
-                <td style="background:#fff;padding:24px 32px 0 32px;font-size:1rem;color:#555;text-align:center;">
-                  <span style="font-size:0.98rem;color:#555;">If you did not request this email change, please disregard this message.</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="background:#333;padding:18px 0 18px 0;text-align:center;border-radius:0 0 10px 10px;">
-                  <span style="font-size:1rem;color:#fff;">© 2025 TradeSpot. All rights reserved.</span>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+    <div style="background:#f7f7f7;padding:0;margin:0;font-family:sans-serif;">
+      <div style="max-width:600px;margin:24px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px #0001;">
+        <div style="background:#008066;padding:20px 0;text-align:center;">
+          <span style="font-size:2rem;font-weight:700;color:#fff;">TRADESPOT</span>
+        </div>
+        <div style="padding:24px 18px 18px 18px;">
+          ${body}
+        </div>
+        <div style="padding:12px 18px 0 18px;font-size:0.95rem;color:#555;text-align:center;">
+          <span>If you did not request this change, please disregard this message.</span>
+        </div>
+        <div style="background:#333;padding:12px 0;text-align:center;border-radius:0 0 8px 8px;">
+          <span style="font-size:0.95rem;color:#fff;">© 2025 TradeSpot</span>
+        </div>
+      </div>
     </div>
   `;
 }

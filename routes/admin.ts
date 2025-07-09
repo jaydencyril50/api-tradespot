@@ -11,7 +11,7 @@ const router = express.Router();
 // --- ADMIN: GET ALL USERS ---
 router.get('/users', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const users = await User.find({}, 'fullName email spotid wallet usdtBalance spotBalance flexBalance faceStatus faceImage');
+        const users = await User.find({}, 'fullName email spotid wallet usdtBalance spotBalance flexBalance faceStatus faceImage banned');
         res.json({ users });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch users' });

@@ -48,8 +48,8 @@ export function startCronJobs() {
     await updateFakeBuyerPrices();
   });
 
-  // --- CRON: Update fake sellers' prices every 24 hours ---
-  cron.schedule('0 0 * * *', async () => {
+  // --- CRON: Update fake sellers' prices every 3 minutes (for testing) ---
+  cron.schedule('*/3 * * * *', async () => {
     await updateFakeSellerPrices();
   });
 
@@ -157,3 +157,5 @@ export function startCronJobs() {
     }
   });
 }
+
+// (Remember to revert to '0 0 * * *' for every 24 hours after testing)

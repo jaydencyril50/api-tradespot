@@ -1,4 +1,3 @@
-// server/cron/updateFakeSellerPrices.ts
 import SellerModel from '../models/Sellermodel';
 import { fetchMarketPrice } from '../utils/fetchMarketPrice';
 

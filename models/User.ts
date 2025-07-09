@@ -1,4 +1,5 @@
 import mongoose, { Document, Types } from "mongoose";
+import bcrypt from 'bcryptjs';
 
 // 1. Define WebAuthnCredential interface (now extends Types.Subdocument)
 export interface WebAuthnCredential extends Types.Subdocument {
@@ -148,6 +149,12 @@ userSchema.virtual('webauthnCredentialsPlain').get(function (this: any) {
         nickname: cred.nickname,
     }));
 });
+
+// Add comparePassword method to userSchema
+userSchema.methods.comparePassword = async function (candidatePassword: string) {
+    if (!this.password) return false;
+    return bcrypt.compare(candidatePassword, this.password);
+};
 
 // 4. Use correct generic when defining your model (with global hot-reload support)
 const User = (global as any).User || mongoose.model<UserDocument>('User', userSchema);

@@ -51,7 +51,7 @@ export function getStyledEmailHtml(subject: string, body: string) {
     <div style="background:#0f172a;padding:0;margin:0;font-family:'Inter','Segoe UI',sans-serif;">
       <div style="max-width:600px;margin:24px auto;background:#1e293b;box-shadow:0 4px 18px rgba(0,0,0,0.5);">
         <div style="background:#0f172a;padding:24px 0;text-align:center;border-bottom:1px solid #1f2937;">
-          <img src=\"https://www.tradespot.online/images/logo.png\" alt=\"TradeSpot Logo\" width=\"64\" height=\"64\" style=\"display:block;margin:0 auto 12px;\">
+          <img src="https://www.tradespot.online/favicon.ico" alt="TradeSpot Logo" width="64" height="64" style="display:block;margin:0 auto 12px;">
           <span style="font-size:1.8rem;font-weight:800;color:#10b981;letter-spacing:1px;">TRADESPOT</span>
         </div>
         <div style="padding:28px 24px;text-align:center;">

@@ -135,52 +135,6 @@ app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-app.get('/auth/google/callback',
-  (req: Request, res: Response, next: NextFunction) => {
-    console.log('[Google OAuth] /auth/google/callback called');
-    next();
-  },
-  passport.authenticate('google', { failureRedirect: '/' }),
-  async (req: Request, res: Response) => {
-    try {
-      console.log('[Google OAuth] Callback handler, req.user:', req.user);
-      // Extract Google profile
-      const profile = req.user as any;
-      if (!profile || !profile.emails || !profile.emails[0]) {
-        console.error('[Google OAuth] Google login failed: No profile or email found', { profile });
-        return res.redirect('https://www.tradespot.online/login?error=google_profile');
-      }
-      const email = profile.emails[0].value;
-      let user = await User.findOne({ email });
-      if (!user) {
-        console.warn('[Google OAuth] Google login attempt for unregistered email:', email);
-        // Do NOT create a new user. Only allow login for existing users.
-        return res.redirect('https://www.tradespot.online/login?error=not_registered');
-      }
-      if (user.banned) {
-        console.warn('[Google OAuth] Banned user attempted Google login:', email);
-        return res.redirect('https://www.tradespot.online/login?error=banned');
-      }
-      // Generate JWT token with unique jti
-      const tokenId = new mongoose.Types.ObjectId().toString();
-      const token = jwt.sign({ userId: user._id, email: user.email, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });
-      // Add session to user's sessions array (max 2 sessions)
-      user.sessions = user.sessions || [];
-      if (user.sessions.length >= 2) {
-        user.sessions.shift();
-      }
-      user.sessions.push({ tokenId, device: 'google-oauth', issuedAt: new Date() });
-      await user.save();
-      console.log('[Google OAuth] Login success, redirecting with token:', token);
-      // Redirect to frontend with token (send to /login, not /dashboard)
-      res.redirect(`https://www.tradespot.online/login?token=${token}`);
-    } catch (err) {
-      console.error('[Google OAuth] Error during Google login callback:', err);
-      return res.redirect('https://www.tradespot.online/login?error=server_error');
-    }
-  }
-);
-
 // Health check route for backend or uptime monitoring
 app.get('/', healthCheckHandler);
 

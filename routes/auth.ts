@@ -184,21 +184,26 @@ router.get('/google',
 
 router.get('/google/callback',
     (req: Request, res: Response, next: NextFunction) => {
+        console.log('[Google OAuth] /api/auth/google/callback called');
         next();
     },
     passport.authenticate('google', { failureRedirect: '/' }),
     async (req: Request, res: Response) => {
         try {
+            console.log('[Google OAuth] Callback handler, req.user:', req.user);
             const profile = req.user as any;
             if (!profile || !profile.emails || !profile.emails[0]) {
+                console.error('[Google OAuth] Google login failed: No profile or email found', { profile });
                 return res.redirect('https://www.tradespot.online/login?error=google_profile');
             }
             const email = profile.emails[0].value;
             let user = await User.findOne({ email });
             if (!user) {
+                console.warn('[Google OAuth] Google login attempt for unregistered email:', email);
                 return res.redirect('https://www.tradespot.online/login?error=not_registered');
             }
             if (user.banned) {
+                console.warn('[Google OAuth] Banned user attempted Google login:', email);
                 return res.redirect('https://www.tradespot.online/login?error=banned');
             }
             const tokenId = new mongoose.Types.ObjectId().toString();
@@ -209,8 +214,10 @@ router.get('/google/callback',
             }
             user.sessions.push({ tokenId, device: 'google-oauth', issuedAt: new Date() });
             await user.save();
+            console.log('[Google OAuth] Login success, redirecting with token:', token);
             res.redirect(`https://www.tradespot.online/login?token=${token}`);
         } catch (err) {
+            console.error('[Google OAuth] Error during Google login callback:', err);
             return res.redirect('https://www.tradespot.online/login?error=server_error');
         }
     }

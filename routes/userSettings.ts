@@ -155,7 +155,7 @@ router.post('/send-email-verification', authenticateToken, async (req: Request, 
 
 router.post('/change-email', authenticateToken, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    const { newEmail, password } = req.body;
+    const { newEmail, password, code } = req.body;
     const user = await User.findById(userId);
     if (!user || typeof user.email !== 'string') {
         res.status(404).json({ error: 'User not found' });
@@ -165,6 +165,10 @@ router.post('/change-email', authenticateToken, async (req: Request, res: Respon
         res.status(400).json({ error: 'Invalid password' });
         return;
     }
+    if (!code || !verifyCode('emailChangeCodes', user.email, code)) {
+        res.status(400).json({ error: 'Invalid or expired verification code' });
+        return;
+    }
     const existing = await User.findOne({ email: newEmail });
     if (existing) {
         res.status(400).json({ error: 'Email already exists' });
@@ -172,6 +176,7 @@ router.post('/change-email', authenticateToken, async (req: Request, res: Respon
     }
     user.email = newEmail;
     await user.save();
+    deleteCode('emailChangeCodes', user.email);
     res.json({ message: 'Email updated successfully' });
 });
 

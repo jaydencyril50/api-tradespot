@@ -224,40 +224,6 @@ router.get('/google/callback',
 );
 
 // --- Password Reset Request ---
-function getPasswordResetEmailHtml(subject: string, body: string) {
-  return `
-    <div style="background-color:#f4f6fb;padding:0;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f6fb;margin:0;padding:0;">
-        <tr>
-          <td align="center" style="padding:40px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e0e6ed;box-shadow:0 10px 30px rgba(18,38,63,0.1);text-align:center;">
-              <tr>
-                <td style="background:#1e3c72;padding:20px 16px;text-align:center;border-top-left-radius:12px;border-top-right-radius:12px;">
-                  <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:1px;">TRADESPOT</h1>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:32px 24px 16px 24px;text-align:center;">
-                  <h2 style="font-size:20px;color:#1e3c72;font-weight:700;margin:0 0 16px 0;">${subject}</h2>
-                  <p style="font-size:16px;line-height:1.6;color:#3a3a3a;margin:0;">
-                    ${body}
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:24px;text-align:center;font-size:13px;color:#8c94a4;border-top:1px solid #e6eaf0;">
-                  <p style="margin:0;">If you did not request this email, you can safely ignore it.</p>
-                  <p style="margin:4px 0 0 0;font-weight:600;color:#1e3c72;">— Tradespot Security Team</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `;
-}
-
 router.post('/request-password-reset', async (req: Request, res: Response) => {
     const { email, wallet, spotid } = req.body;
     if (!email || !wallet || !spotid) {
@@ -280,7 +246,7 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
     const body = `You requested a password reset for your TradeSpot account.<br><br>
       <a href="${resetUrl}" style="display:inline-block;padding:12px 28px;background:#1e3c72;color:#fff;font-weight:700;font-size:16px;border-radius:6px;text-decoration:none;margin:18px 0 12px 0;">Reset Password</a><br>
       <span style="color:#8c94a4;font-size:14px;">This link will expire in 30 minutes. If you did not request this, please ignore this email.</span>`;
-    const html = getPasswordResetEmailHtml(subject, body);
+    const html = getStyledEmailHtml(subject, body);
 
     const transporter = nodemailer.createTransport({
         service: 'gmail',

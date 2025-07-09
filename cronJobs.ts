@@ -44,7 +44,7 @@ export function startCronJobs() {
   });
 
   // --- CRON: Update fake buyers' prices every 24 hours ---
-  cron.schedule('*/3 * * * *', async () => {
+  cron.schedule('0 0 * * *', async () => {
     await updateFakeBuyerPrices();
   });
 

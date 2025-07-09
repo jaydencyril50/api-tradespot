@@ -332,7 +332,7 @@ router.get('/user/me', authenticateToken, async (req, res) => {
 });
 
 // --- Admin: Ban/Unban User by Email ---
-router.post('/admin/ban', async (req: Request, res: Response) => {
+router.post('/admin/ban', authenticateToken, async (req: Request, res: Response) => {
     const { email, ban } = req.body;
     // Only allow admin to perform this action
     const adminId = (req as any).user?.userId;

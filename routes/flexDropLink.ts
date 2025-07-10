@@ -43,7 +43,11 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
     const amount = Math.floor(Math.random() * (flexDrop.maxAmount - flexDrop.minAmount + 1)) + flexDrop.minAmount;
     flexDrop.claimedBy.push({ user: req.user.id, amount, claimedAt: new Date() });
     await flexDrop.save();
-    // Optionally: credit user account here
+    // Credit user flexBalance
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $inc: { flexBalance: amount } }
+    );
     res.json({ amount });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

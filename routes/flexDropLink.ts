@@ -54,6 +54,7 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
     );
     res.json({ amount });
   } catch (err) {
+    console.error('FlexDrop claim error:', err); // Log the full error
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });

@@ -8,8 +8,8 @@ const authenticateToken = require('../middleware/authenticateToken').default;
 // Admin creates a flex drop link
 router.post('/create', authenticateToken, async (req, res) => {
   try {
-    const { minAmount, maxAmount, expiresAt } = req.body;
-    if (!minAmount || !maxAmount || !expiresAt) {
+    const { minAmount, maxAmount, expiresAt, maxClaims } = req.body;
+    if (!minAmount || !maxAmount || !expiresAt || !maxClaims) {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
     if (minAmount > maxAmount) {
@@ -21,6 +21,7 @@ router.post('/create', authenticateToken, async (req, res) => {
       minAmount,
       maxAmount,
       expiresAt,
+      maxClaims,
       linkId
     });
     res.json({ linkId, flexDrop });
@@ -38,6 +39,9 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
     if (new Date() > flexDrop.expiresAt) return res.status(410).json({ message: 'Link expired.' });
     if (flexDrop.claimedBy.some(c => c.user.toString() === req.user.id)) {
       return res.status(403).json({ message: 'Already claimed.' });
+    }
+    if (flexDrop.claimedBy.length >= flexDrop.maxClaims) {
+      return res.status(410).json({ message: 'Max claims reached.' });
     }
     // Generate random amount
     const amount = Math.floor(Math.random() * (flexDrop.maxAmount - flexDrop.minAmount + 1)) + flexDrop.minAmount;

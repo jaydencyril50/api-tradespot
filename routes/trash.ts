@@ -29,4 +29,18 @@ router.post('/', authenticateToken, async (req: express.Request, res: express.Re
   }
 });
 
+// Delete a trash item by ID
+router.delete('/:id', authenticateToken, async (req: express.Request, res: express.Response) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Trash.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Trash item not found' });
+    }
+    res.json({ message: 'Trash item deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete trash item' });
+  }
+});
+
 export default router;

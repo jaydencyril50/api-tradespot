@@ -9,16 +9,23 @@ import User from '../models/User';
 import webauthnRouter from './webauthn';
 import authenticateToken from '../middleware/authenticateToken';
 import { getWelcomeEmailBody, getStyledEmailHtml } from '../utils/emailTemplates';
+import { adminRateLimiter, signupRateLimiter, loginRateLimiter } from '../middleware/rateLimiters';
 
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 // --- Register ---
-router.post('/register', async (req: Request, res: Response) => {
-    const { fullName, email, password, wallet, referredBy } = req.body;
-    if (!fullName || !email || !password || !wallet || !referredBy) {
-        res.status(400).json({ error: 'All fields required, including referral link' });
+router.post('/register', signupRateLimiter, async (req: Request, res: Response) => {
+    const { fullName, email, password, wallet, referredBy, device } = req.body;
+    if (!fullName || !email || !password || !wallet || !referredBy || !device) {
+        res.status(400).json({ error: 'All fields required, including referral link and device' });
+        return;
+    }
+    // Check if this device has already registered
+    const deviceExists = await User.findOne({ signupDevice: device });
+    if (deviceExists) {
+        res.status(400).json({ error: 'Signup already completed on this device.' });
         return;
     }
     const referrer = await User.findOne({ referralCode: referredBy });
@@ -46,7 +53,7 @@ router.post('/register', async (req: Request, res: Response) => {
         spotid = Math.floor(1000000 + Math.random() * 9000000).toString();
     } while (await User.findOne({ spotid }));
     const hash = await bcrypt.hash(password, 10);
-    const user = new User({ fullName, email, password: hash, wallet, usdtBalance: 0, spotBalance: 0, referralCode, referredBy, spotid });
+    const user = new User({ fullName, email, password: hash, wallet, usdtBalance: 0, spotBalance: 0, referralCode, referredBy, spotid, signupDevice: device });
     await user.save();
     referrer.teamMembers.push({ userId: user._id as mongoose.Types.ObjectId, joinedAt: new Date() });
     await referrer.save();
@@ -75,7 +82,7 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // --- Login ---
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginRateLimiter, async (req: Request, res: Response) => {
     const { email, password, twoFAToken, device } = req.body;
     const user = await User.findOne({ email });
     if (!user || !user.password) {

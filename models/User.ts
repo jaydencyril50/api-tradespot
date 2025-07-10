@@ -115,6 +115,8 @@ const userSchema = new mongoose.Schema({
         withdraw: { type: Boolean, default: false },
         convert: { type: Boolean, default: false }
     },
+    // Device ID for signup tracking
+    signupDevice: { type: String, unique: true, sparse: true },
 });
 
 // Add toJSON transform to auto-handle Buffers for webauthnCredentials

@@ -3,7 +3,7 @@ const router = express.Router();
 const FlexDropLink = require('../models/FlexDropLink');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
-const authenticateToken = require('../middleware/authenticateToken');
+const authenticateToken = require('../middleware/authenticateToken').default;
 
 // Admin creates a flex drop link
 router.post('/create', authenticateToken, async (req, res) => {

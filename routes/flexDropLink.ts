@@ -37,7 +37,10 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
     const flexDrop = await FlexDropLink.findOne({ linkId });
     if (!flexDrop) return res.status(404).json({ message: 'Link not found.' });
     if (new Date() > flexDrop.expiresAt) return res.status(410).json({ message: 'Link expired.' });
-    if (flexDrop.claimedBy.some(c => c.user.toString() === req.user.id)) {
+    if (!Array.isArray(flexDrop.claimedBy)) {
+      flexDrop.claimedBy = [];
+    }
+    if (flexDrop.claimedBy.some(c => c.user.toString() === req.user.userId)) {
       return res.status(403).json({ message: 'Already claimed.' });
     }
     if (flexDrop.claimedBy.length >= flexDrop.maxClaims) {
@@ -45,16 +48,21 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
     }
     // Generate random amount
     const amount = Math.floor(Math.random() * (flexDrop.maxAmount - flexDrop.minAmount + 1)) + flexDrop.minAmount;
-    flexDrop.claimedBy.push({ user: req.user.id, amount, claimedAt: new Date() });
+    flexDrop.claimedBy.push({ user: req.user.userId, amount, claimedAt: new Date() });
     await flexDrop.save();
     // Credit user flexBalance
     await User.findByIdAndUpdate(
-      req.user.id,
+      req.user.userId,
       { $inc: { flexBalance: amount } }
     );
     res.json({ amount });
   } catch (err) {
-    console.error('FlexDrop claim error:', err); // Log the full error
+    console.error('FlexDrop claim error:', {
+      message: err.message,
+      stack: err.stack,
+      user: req.user,
+      linkId: req.params.linkId
+    });
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });

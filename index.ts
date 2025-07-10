@@ -51,7 +51,7 @@ import { startCronJobs } from './cronJobs';
 import { asyncHandler, logActivity, ActivityType } from './utils/utility';
 import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 import webauthnSettingsRouter from './routes/webauthnSettings';
-
+const flexDropLinkRouter = require('./routes/flexDropLink'); 
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -156,6 +156,8 @@ app.use('/api/announcement', announcementRouter);
 app.use('/api/admin/trash', trashRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
+app.use('/api/flex-drop', flexDropLinkRouter); // Mount flexDropLink router
+
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

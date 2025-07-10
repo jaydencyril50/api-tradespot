@@ -43,7 +43,6 @@ var bcryptjs_1 = require("bcryptjs");
 var jsonwebtoken_1 = require("jsonwebtoken");
 var dotenv = require("dotenv");
 var node_cron_1 = require("node-cron");
-var nodemailer_1 = require("nodemailer");
 dotenv.config();
 var app = (0, express_1.default)();
 app.use((0, cors_1.default)());

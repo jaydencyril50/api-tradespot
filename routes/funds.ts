@@ -3,15 +3,16 @@ import User from '../models/User';
 import DepositSession from '../models/DepositSession';
 import Notification from '../models/Notification';
 import Withdrawal from '../models/Withdrawal';
-import nodemailer from 'nodemailer';
 import speakeasy from 'speakeasy';
 import authenticateToken from '../middleware/authenticateToken';
 import verifyWebauthn from '../middleware/verifyWebauthn';
 import conditionalWebauthn from '../middleware/conditionalWebauthn';
 import bcrypt from 'bcryptjs';
 import { getStyledEmailHtml } from '../routes/userSettings';
+import { Resend } from 'resend';
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- CODE VERIFICATION HELPERS ---
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
@@ -220,15 +221,8 @@ router.post('/send-withdrawal-verification', authenticateToken, async (req: Requ
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setCode('withdrawalCodes', user.email, code);
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: user.email,
             subject: 'Withdrawal Verification Code',
             html: getStyledEmailHtml(
@@ -320,15 +314,8 @@ router.post('/send-funds-privacy-code', authenticateToken, async (req: Request, 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setCode('fundsPrivacyCodes', user.email, code);
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: user.email,
             subject: 'Funds Privacy Verification Code',
             html: getStyledEmailHtml(

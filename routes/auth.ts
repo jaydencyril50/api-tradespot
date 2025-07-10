@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import passport from 'passport';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import User from '../models/User';
 import webauthnRouter from './webauthn';
 import authenticateToken from '../middleware/authenticateToken';
@@ -14,6 +14,7 @@ import { adminRateLimiter, signupRateLimiter, loginRateLimiter } from '../middle
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET!;
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 // --- Register ---
 router.post('/register', signupRateLimiter, async (req: Request, res: Response) => {
@@ -60,15 +61,8 @@ router.post('/register', signupRateLimiter, async (req: Request, res: Response) 
 
     // Send welcome email
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: email,
             subject: 'Welcome to TradeSpot!',
             html: getStyledEmailHtml('Welcome to TradeSpot!', getWelcomeEmailBody(fullName))
@@ -257,16 +251,9 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
       <span style="color:#8c94a4;font-size:14px;">This link will expire in 30 minutes. If you did not request this, please ignore this email.</span></div>`;
     const html = getStyledEmailHtml(subject, body);
 
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-        },
-    });
-    await transporter.sendMail({
+    await resend.emails.send({
         to: user.email,
-        from: process.env.EMAIL_USER,
+        from: 'noreply@tradespot.online',
         subject,
         html
     });

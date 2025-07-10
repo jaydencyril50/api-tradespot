@@ -1,12 +1,13 @@
 import express, { Request, Response } from 'express';
 import User from '../models/User';
-import nodemailer from 'nodemailer';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import bcrypt from 'bcryptjs';
 import authenticateToken from '../middleware/authenticateToken';
+import { Resend } from 'resend';
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- CODE VERIFICATION HELPERS (copy or import if needed) ---
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
@@ -79,15 +80,8 @@ router.post('/send-name-verification', authenticateToken, async (req: Request, r
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setCode('nameChangeCodes', user.email, code);
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: user.email,
             subject: 'Your Name Change Verification Code',
             html: getStyledEmailHtml(
@@ -130,15 +124,8 @@ router.post('/send-email-verification', authenticateToken, async (req: Request, 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setCode('emailChangeCodes', user.email, code);
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: user.email,
             subject: 'Your Email Change Verification Code',
             html: getStyledEmailHtml(
@@ -190,15 +177,8 @@ router.post('/send-wallet-verification', authenticateToken, async (req: Request,
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setCode('walletChangeCodes', user.email, code);
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: user.email,
             subject: 'Wallet Change Verification Code',
             html: getStyledEmailHtml(
@@ -272,15 +252,8 @@ router.post('/send-password-verification', authenticateToken, async (req: Reques
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setCode('passwordChangeCodes', user.email, code);
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'noreply@tradespot.online',
             to: user.email,
             subject: 'Password Change Verification Code',
             html: getStyledEmailHtml(

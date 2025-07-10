@@ -8,7 +8,6 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cron from 'node-cron';
-import nodemailer from 'nodemailer';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import http from 'http';
@@ -156,8 +155,7 @@ app.use('/api/announcement', announcementRouter);
 app.use('/api/admin/trash', trashRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
-app.use('/api/flex-drop', flexDropLinkRouter); // Mount flexDropLink router
-
+app.use('/api/flex-drop', flexDropLinkRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

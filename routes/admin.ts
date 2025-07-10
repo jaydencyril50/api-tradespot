@@ -156,11 +156,13 @@ router.get('/team-members/:id', authenticateToken, async (req: Request, res: Res
             select: 'spotid email'
         });
         if (!user) return res.status(404).json({ error: 'User not found' });
-        // Return array of { spotid, email }
-        const members = (user.teamMembers || []).map((tm: any) => ({
-            spotid: tm.userId?.spotid,
-            email: tm.userId?.email
-        }));
+        // Return array of { spotid, email }, filter out incomplete/null
+        const members = (user.teamMembers || [])
+            .filter((tm: any) => tm.userId && tm.userId.spotid)
+            .map((tm: any) => ({
+                spotid: tm.userId.spotid,
+                email: tm.userId.email
+            }));
         res.json({ members });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch team members' });

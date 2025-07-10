@@ -9,6 +9,7 @@ import authenticateToken from '../middleware/authenticateToken';
 import verifyWebauthn from '../middleware/verifyWebauthn';
 import conditionalWebauthn from '../middleware/conditionalWebauthn';
 import bcrypt from 'bcryptjs';
+import { getStyledEmailHtml } from '../routes/userSettings';
 
 const router = express.Router();
 
@@ -36,41 +37,6 @@ function verifyCode(globalKey: string, email: string, inputCode: string): boolea
         return false;
     }
     return true;
-}
-
-// --- EMAIL STYLING UTILITY ---
-function getStyledEmailHtml(subject: string, body: string) {
-  return `
-    <div style="background-color:#f4f6fb;padding:0;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f6fb;margin:0;padding:0;">
-        <tr>
-          <td align="center" style="padding:40px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e0e6ed;box-shadow:0 10px 30px rgba(18,38,63,0.1);text-align:center;">
-              <tr>
-                <td style="background:#1e3c72;padding:20px 16px;text-align:center;border-top-left-radius:12px;border-top-right-radius:12px;">
-                  <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:1px;">TRADESPOT</h1>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:32px 24px 16px 24px;text-align:center;">
-                  <h2 style="font-size:20px;color:#1e3c72;font-weight:700;margin:0 0 16px 0;">${subject}</h2>
-                  <p style="font-size:16px;line-height:1.6;color:#3a3a3a;margin:0;">
-                    ${body}
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:24px;text-align:center;font-size:13px;color:#8c94a4;border-top:1px solid #e6eaf0;">
-                  <p style="margin:0;">If you did not request this email, you can safely ignore it.</p>
-                  <p style="margin:4px 0 0 0;font-weight:600;color:#1e3c72;">— Tradespot Security Team</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `;
 }
 
 // --- CONVERT ENDPOINT ---
@@ -367,7 +333,13 @@ router.post('/send-funds-privacy-code', authenticateToken, async (req: Request, 
             subject: 'Funds Privacy Verification Code',
             html: getStyledEmailHtml(
               'Funds Privacy Verification',
-              `Your funds privacy verification code is: <b style=\"font-size:20px;color:#1e3c72;\">${code}</b>`
+              `<div style="text-align:center;">
+                <p style="font-size:1.15rem;margin-bottom:18px;margin-top:0;">Hello <b>${user.fullName || user.email}</b>,</p>
+                <p style="font-size:1.08rem;margin-bottom:22px;margin-top:0;">You recently requested to update your <b>funds privacy settings</b>.<br/>Please use the verification code below to continue:</p>
+                <div style="margin:24px auto 24px auto;max-width:220px;text-align:center;">
+                  <span style="display:inline-block;font-size:2.2rem;font-weight:700;color:#008066;border:1.5px solid #008066;padding:18px 32px;background:#ededed;letter-spacing:2px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">${code}</span>
+                </div>
+              </div>`
             )
         });
         res.json({ message: 'Verification code sent' });

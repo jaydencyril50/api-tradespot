@@ -17,7 +17,7 @@ router.post('/create', authenticateToken, async (req, res) => {
     }
     const linkId = uuidv4();
     const flexDrop = await FlexDropLink.create({
-      admin: req.user.id,
+      admin: req.user.userId, // FIXED: use userId from JWT payload
       minAmount,
       maxAmount,
       expiresAt,

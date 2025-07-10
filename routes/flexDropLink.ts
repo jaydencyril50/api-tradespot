@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const FlexDropLink = require('../models/FlexDropLink');
-const User = require('../models/User');
+const User = require('../models/User').default;
 const { v4: uuidv4 } = require('uuid');
 const authenticateToken = require('../middleware/authenticateToken').default;
 

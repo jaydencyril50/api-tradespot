@@ -281,7 +281,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
-    res.json({ message: 'Successful✅' });
+    res.status(200).json({ message: 'Password reset successful' });
 });
 
 // --- Validate Password Reset Token ---

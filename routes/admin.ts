@@ -217,4 +217,30 @@ router.post('/deposits/:id/approve', authenticateToken, async (req: Request, res
     }
 });
 
+// --- ADMIN: GET PLATFORM STATS ---
+router.get('/platform-stats', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const [totalDeposits, totalWithdrawals, totalUsers, totalP2P] = await Promise.all([
+            DepositSession.aggregate([
+                { $match: { status: 'approved' } },
+                { $group: { _id: null, total: { $sum: "$amount" } } }
+            ]),
+            Withdrawal.aggregate([
+                { $match: { status: 'approved' } },
+                { $group: { _id: null, total: { $sum: "$amount" } } }
+            ]),
+            User.countDocuments({}),
+            require('../models/Order').default.countDocuments({ status: 'completed' })
+        ]);
+        res.json({
+            totalDeposits: totalDeposits[0]?.total || 0,
+            totalWithdrawals: totalWithdrawals[0]?.total || 0,
+            totalUsers,
+            totalP2PTrades: totalP2P
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch platform stats' });
+    }
+});
+
 export default router;

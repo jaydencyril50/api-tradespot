@@ -55,6 +55,19 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
       req.user.userId,
       { $inc: { flexBalance: amount } }
     );
+    // Log transaction in user's history
+    const user = await User.findById(req.user.userId);
+    if (user) {
+      user.recentTransactions = user.recentTransactions || [];
+      user.recentTransactions.push({
+        type: 'FlexDrop',
+        amount,
+        currency: 'FLEX',
+        date: new Date(),
+        note: `Claimed FlexDrop link ${linkId}`
+      });
+      await user.save();
+    }
     res.json({ amount });
   } catch (err) {
     console.error('FlexDrop claim error:', {

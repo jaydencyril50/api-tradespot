@@ -74,17 +74,25 @@ router.post('/generate-sellers', async (_req, res) => {
     ];
     let userIdx = 0;
     for (let vipLevel = 1; vipLevel <= 3; vipLevel++) {
-      let percent;
-      if (vipLevel === 1) percent = 1.8;
-      else if (vipLevel === 2) percent = 2.3;
-      else percent = 3.0;
+      let minPercent, maxPercent;
+      if (vipLevel === 1) {
+        minPercent = 0.9;
+        maxPercent = 1.0;
+      } else if (vipLevel === 2) {
+        minPercent = 1.2;
+        maxPercent = 1.25;
+      } else {
+        minPercent = 1.4;
+        maxPercent = 1.5;
+      }
       for (let bucket = 0; bucket < minLimitBuckets.length; bucket++) {
         for (let j = 0; j < 20; j++) {
           const { min, max } = minLimitBuckets[bucket];
           const minLimit = Math.floor(Math.random() * (max - min + 1)) + min;
           // maxLimit: random between 2x and 4x minLimit (same as buyers)
           const maxLimit = Math.floor(minLimit * (2 + Math.random() * 2)); // 2x to 4x
-          // Price: fixed percent ABOVE market price by VIP level
+          // Price: random percent ABOVE market price by VIP level
+          const percent = Math.random() * (maxPercent - minPercent) + minPercent;
           const price = +(marketPrice * (1 + percent / 100)).toFixed(2);
           function formatNumber(n: number): string {
             if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B';

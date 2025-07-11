@@ -2,9 +2,6 @@
 import BuyerModel from '../models/Buyermodel';
 import { fetchMarketPrice } from '../utils/fetchMarketPrice';
 
-/**
- * Updates all fake buyers' prices to a random value between 1% and 2% below the latest market price.
- */
 export async function updateFakeBuyerPrices() {
   try {
     const marketPrice = await fetchMarketPrice();
@@ -12,13 +9,13 @@ export async function updateFakeBuyerPrices() {
     for (const buyer of buyers) {
       let minPercent = 0, maxPercent = 0;
       if (buyer.vipLevel === 1) {
-        minPercent = 0;
+        minPercent = 0.9;
         maxPercent = 1.0;
       } else if (buyer.vipLevel === 2) {
-        minPercent = 0;
+        minPercent = 1.1;
         maxPercent = 1.2;
       } else {
-        minPercent = 0;
+        minPercent = 1.4;
         maxPercent = 1.5;
       }
       const percent = Math.random() * (maxPercent - minPercent) + minPercent;

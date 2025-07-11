@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import DepositSession from '../models/DepositSession';
 import Activity from '../models/Activity';
@@ -8,6 +9,56 @@ import authenticateToken from '../middleware/authenticateToken';
 
 const router = express.Router();
 
+// --- ADMIN: SEND FUNDS TO USER BY EMAIL ---
+router.post('/send-funds', authenticateToken, async (req: Request, res: Response) => {
+    // Only allow admin
+    const adminId = (req.user as { _id: mongoose.Types.ObjectId })?._id;
+    const adminUser = await User.findById(adminId);
+    if (!adminUser || !adminUser.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden: Admins only' });
+    }
+    const { email, amount, currency, tag } = req.body;
+    if (!email || !amount || !currency || !tag) {
+        return res.status(400).json({ error: 'Missing required fields: email, amount, currency, tag' });
+    }
+    if (!['FLEX', 'USDT', 'SPOT'].includes(currency)) {
+        return res.status(400).json({ error: 'Invalid currency' });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    // Update balance
+    switch (currency) {
+        case 'FLEX':
+            user.flexBalance = (user.flexBalance || 0) + Number(amount);
+            break;
+        case 'USDT':
+            user.usdtBalance = (user.usdtBalance || 0) + Number(amount);
+            break;
+        case 'SPOT':
+            user.spotBalance = (user.spotBalance || 0) + Number(amount);
+            break;
+    }
+    // Log transaction
+    user.recentTransactions = user.recentTransactions || [];
+    user.recentTransactions.push({
+        type: tag,
+        amount: Number(amount),
+        currency,
+        date: new Date(),
+        note: `Admin sent funds: ${tag}`
+    });
+    await user.save();
+    // Optionally, notify user
+    try {
+        await Notification.create({
+            userId: user._id,
+            message: `You received ${amount} ${currency} from admin. Reason: ${tag}`
+        });
+    } catch (e) {}
+    res.json({ message: `Funds sent to ${email} (${amount} ${currency}) with tag '${tag}'` });
+});
 // --- ADMIN: GET ALL USERS ---
 router.get('/users', authenticateToken, async (req: Request, res: Response) => {
     try {

@@ -98,4 +98,17 @@ router.post('/expire/:linkId', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all flex drop links for admin
+router.get('/admin-links', authenticateToken, async (req, res) => {
+  try {
+    // Only allow admin users
+    const adminId = req.user.userId;
+    // Find all links created by this admin
+    const links = await FlexDropLink.find({ admin: adminId });
+    res.json({ links });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;

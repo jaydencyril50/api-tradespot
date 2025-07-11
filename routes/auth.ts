@@ -112,12 +112,16 @@ router.post('/login', loginRateLimiter, async (req: Request, res: Response) => {
     const tokenId = new mongoose.Types.ObjectId().toString();
     const token = jwt.sign({ userId: user._id, email: user.email, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });
     user.sessions = user.sessions || [];
-    // Use atomic update to avoid VersionError
+    // Use atomic update to avoid VersionError and MongoDB update conflict
     await User.findByIdAndUpdate(
         user._id,
         {
-            $push: { sessions: { tokenId, device: device || 'unknown', issuedAt: new Date() } },
-            $set: { sessions: { $slice: -2 } }
+            $push: {
+                sessions: {
+                    $each: [{ tokenId, device: device || 'unknown', issuedAt: new Date() }],
+                    $slice: -2 // Keep only the last 2 sessions
+                }
+            }
         },
         { new: true }
     );

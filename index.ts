@@ -197,8 +197,8 @@ const startFlexProfitMonitor = () => {
 
 startFlexProfitMonitor();
 
-// Trust proxy to handle X-Forwarded-For header for express-rate-limit
-app.set('trust proxy', true);
+// Trust proxy to handle X-Forwarded-For header for express-rate-limit (secure setting)
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

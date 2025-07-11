@@ -80,4 +80,22 @@ router.post('/claim/:linkId', authenticateToken, async (req, res) => {
   }
 });
 
+// Admin expires a flex drop link
+router.post('/expire/:linkId', authenticateToken, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const flexDrop = await FlexDropLink.findOne({ linkId });
+    if (!flexDrop) return res.status(404).json({ message: 'Link not found.' });
+    // Only the admin who created the link can expire it
+    if (flexDrop.admin.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Not authorized to expire this link.' });
+    }
+    flexDrop.expiresAt = new Date();
+    await flexDrop.save();
+    res.json({ message: 'FlexDrop link expired successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;

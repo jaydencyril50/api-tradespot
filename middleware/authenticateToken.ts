@@ -24,12 +24,7 @@ export default function authenticateToken(req: Request, res: Response, next: Nex
             res.status(401).json({ error: 'Session expired or invalidated' });
             return;
         }
-        (req as any).user = {
-            _id: payload.userId,
-            email: payload.email,
-            isAdmin: payload.isAdmin,
-            jti: payload.jti
-        };
+        (req as any).user = payload;
         next();
     });
 }

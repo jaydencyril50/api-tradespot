@@ -275,6 +275,14 @@ router.post('/withdraw', authenticateToken, conditionalWebauthn('withdraw'), asy
         }
     }
     user.flexBalance -= amount;
+    user.recentTransactions = user.recentTransactions || [];
+    user.recentTransactions.push({
+        type: 'Withdrawal',
+        amount,
+        currency: 'FLEX',
+        date: new Date(),
+        note: `Withdrawal request submitted to ${user.wallet}`
+    });
     await user.save();
     const withdrawal = new Withdrawal({
         userId,

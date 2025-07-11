@@ -55,7 +55,7 @@ router.post('/send-funds', authenticateToken, async (req: Request, res: Response
     try {
         await Notification.create({
             userId: user._id,
-            message: `You received ${amount} ${currency} from admin. Reason: ${tag}`
+            message: `${tag} ${amount} ${currency}`
         });
     } catch (e) {}
     res.json({ message: `Funds sent to ${email} (${amount} ${currency}) with tag '${tag}'` });

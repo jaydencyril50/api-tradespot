@@ -112,11 +112,15 @@ router.post('/login', loginRateLimiter, async (req: Request, res: Response) => {
     const tokenId = new mongoose.Types.ObjectId().toString();
     const token = jwt.sign({ userId: user._id, email: user.email, jti: tokenId }, JWT_SECRET, { expiresIn: '1d' });
     user.sessions = user.sessions || [];
-    if (user.sessions.length >= 2) {
-        user.sessions.shift();
-    }
-    user.sessions.push({ tokenId, device: device || 'unknown', issuedAt: new Date() });
-    await user.save();
+    // Use atomic update to avoid VersionError
+    await User.findByIdAndUpdate(
+        user._id,
+        {
+            $push: { sessions: { tokenId, device: device || 'unknown', issuedAt: new Date() } },
+            $set: { sessions: { $slice: -2 } }
+        },
+        { new: true }
+    );
     res.json({ token, user: { id: user._id, fullName: user.fullName, email: user.email, wallet: user.wallet, usdtBalance: user.usdtBalance, spotBalance: user.spotBalance } });
 });
 

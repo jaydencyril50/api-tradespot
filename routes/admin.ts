@@ -12,9 +12,10 @@ const router = express.Router();
 // --- ADMIN: SEND FUNDS TO USER BY EMAIL ---
 router.post('/send-funds', authenticateToken, async (req: Request, res: Response) => {
     // Only allow admin
-    const adminId = (req.user as { _id: mongoose.Types.ObjectId })?._id;
-    const adminUser = await User.findById(adminId);
-    if (!adminUser || !adminUser.isAdmin) {
+    const { userId, isAdmin } = req.user as { userId: string; isAdmin: boolean };
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden: Admins only' });
+    const adminUser = await User.findById(userId);
+    if (!adminUser) {
         return res.status(403).json({ error: 'Forbidden: Admins only' });
     }
     const { email, amount, currency, tag } = req.body;

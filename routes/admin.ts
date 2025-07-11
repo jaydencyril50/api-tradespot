@@ -11,8 +11,8 @@ const router = express.Router();
 // --- ADMIN: GET ALL USERS ---
 router.get('/users', authenticateToken, async (req: Request, res: Response) => {
     try {
-        // Include createdAt and sort by newest first
-        const users = await User.find({}, 'fullName email spotid wallet usdtBalance spotBalance flexBalance faceStatus faceImage banned createdAt').sort({ createdAt: -1 });
+        // Sort users by createdAt descending (newest first)
+        const users = await User.find({}).sort({ createdAt: -1 });
         res.json({ users });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch users' });

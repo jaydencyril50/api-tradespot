@@ -162,4 +162,38 @@ userSchema.methods.comparePassword = async function (candidatePassword: string) 
 // 4. Use correct generic when defining your model (with global hot-reload support)
 const User = (global as any).User || mongoose.model<UserDocument>('User', userSchema);
 (global as any).User = User;
+// Cascade delete related data when a user is deleted
+userSchema.post('findOneAndDelete', async function(doc) {
+  if (!doc) return;
+  const userId = doc._id;
+  const spotid = doc.spotid;
+  const email = doc.email;
+  const Activity = require('./Activity').default || require('./Activity');
+  const Order = require('./Order').default || require('./Order');
+  const DepositSession = require('./DepositSession').default || require('./DepositSession');
+  const Withdrawal = require('./Withdrawal').default || require('./Withdrawal');
+  const Notification = require('./Notification').default || require('./Notification');
+  const Message = require('./Message').default || require('./Message');
+  const FlexDropLink = require('./FlexDropLink');
+  // Delete activities
+  await Activity.deleteMany({ 'user._id': userId });
+  // Delete orders
+  await Order.deleteMany({ userId });
+  // Delete deposit sessions
+  await DepositSession.deleteMany({ userId });
+  // Delete withdrawals
+  await Withdrawal.deleteMany({ userId });
+  // Delete notifications
+  await Notification.deleteMany({ userId });
+  // Delete messages (as sender or recipient)
+  await Message.deleteMany({ $or: [ { sender: userId }, { recipient: userId } ] });
+  // Remove user from claimedBy in FlexDropLink
+  await FlexDropLink.updateMany(
+    { 'claimedBy.user': userId },
+    { $pull: { claimedBy: { user: userId } } }
+  );
+  // Optionally, delete FlexDropLinks created by this user (if admin)
+  await FlexDropLink.deleteMany({ admin: userId });
+});
+
 export default User;

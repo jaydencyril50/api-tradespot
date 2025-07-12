@@ -6,6 +6,7 @@ import Activity from '../models/Activity';
 import Withdrawal from '../models/Withdrawal';
 import Notification from '../models/Notification';
 import authenticateToken from '../middleware/authenticateToken';
+import Order from '../models/Order';
 
 const router = express.Router();
 
@@ -270,7 +271,6 @@ router.post('/deposits/:id/approve', authenticateToken, async (req: Request, res
     }
 });
 
-// --- ADMIN: GET PLATFORM STATS ---
 router.get('/platform-stats', authenticateToken, async (req: Request, res: Response) => {
     try {
         const [totalDeposits, totalWithdrawals, totalUsers, totalP2P] = await Promise.all([
@@ -283,8 +283,9 @@ router.get('/platform-stats', authenticateToken, async (req: Request, res: Respo
                 { $group: { _id: null, total: { $sum: "$amount" } } }
             ]),
             User.countDocuments({}),
-            require('../models/Order').default.countDocuments({ status: 'completed' })
+            Order.countDocuments({ status: 'completed' }) // ✅ This will now work
         ]);
+
         res.json({
             totalDeposits: totalDeposits[0]?.total || 0,
             totalWithdrawals: totalWithdrawals[0]?.total || 0,
@@ -292,6 +293,7 @@ router.get('/platform-stats', authenticateToken, async (req: Request, res: Respo
             totalP2PTrades: totalP2P
         });
     } catch (err) {
+        console.error('❌ Platform stats error:', err);
         res.status(500).json({ error: 'Failed to fetch platform stats' });
     }
 });

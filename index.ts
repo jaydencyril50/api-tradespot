@@ -39,6 +39,7 @@ import SellerModel from './models/Sellermodel';
 import notificationsRouter from './routes/notifications';
 import portfolioRoutes, { monitorFlexProfit } from './routes/portfolio';
 import Notification from './models/Notification';
+import rewardRouter from './routes/reward';
 import Withdrawal from './models/Withdrawal';
 import adminRouter from './routes/admin';
 import fundsRouter from './routes/funds';
@@ -157,6 +158,7 @@ app.use('/api/admin/trash', trashRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
 app.use('/api/flex-drop', flexDropLinkRouter);
+app.use('/api/reward', rewardRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

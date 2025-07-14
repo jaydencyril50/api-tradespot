@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^7.6.0",
+    "@peculiar/asn1-android": "^2.3.16",
     "@simplewebauthn/server": "^13.1.2",
     "@simplewebauthn/types": "^12.0.0",
     "axios": "^0.21.1",

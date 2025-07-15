@@ -8,14 +8,14 @@ export async function updateFakeSellerPrices() {
     for (const seller of sellers) {
       let minPercent = 0, maxPercent = 0;
       if (seller.vipLevel === 1) {
-        minPercent = 0.9;
-        maxPercent = 1.0;
+        minPercent = 1.0;
+        maxPercent = 1.15;
       } else if (seller.vipLevel === 2) {
         minPercent = 1.2;
-        maxPercent = 1.25;
+        maxPercent = 1.35;
       } else {
-        minPercent = 1.4;
-        maxPercent = 1.5;
+        minPercent = 1.35;
+        maxPercent = 1.6;
       }
       const percent = Math.random() * (maxPercent - minPercent) + minPercent;
       const newPrice = +(marketPrice * (1 + percent / 100)).toFixed(2);

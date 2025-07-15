@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import Reward from '../models/Reward';
+import AwardTableRow from '../models/AwardTableRow';
 
 const router = express.Router();
 
@@ -33,6 +34,35 @@ router.get('/rewards', async (_req: Request, res: Response) => {
     res.json({ rewards });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch rewards' });
+  }
+});
+
+// Get all award table rows
+router.get('/award-table', async (_req, res) => {
+  try {
+    const rows = await AwardTableRow.find();
+    res.json({ rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save or update an award table row by category
+router.post('/award-table', async (req, res) => {
+  const { category, team, reward } = req.body;
+  if (!category || !team || !reward) {
+    return res.status(400).json({ error: 'Missing required fields.' });
+  }
+  try {
+    // Update if category exists, else create
+    const row = await AwardTableRow.findOneAndUpdate(
+      { category },
+      { team, reward },
+      { new: true, upsert: true }
+    );
+    res.json({ row });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

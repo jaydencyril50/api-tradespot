@@ -51,7 +51,7 @@ router.post('/register', signupRateLimiter, async (req: Request, res: Response) 
     } while (await User.findOne({ referralCode }));
     let spotid;
     do {
-        spotid = Math.floor(1000000 + Math.random() * 9000000).toString();
+        spotid = Math.floor(10000 + Math.random() * 90000).toString();
     } while (await User.findOne({ spotid }));
     const hash = await bcrypt.hash(password, 10);
     const user = new User({ fullName, email, password: hash, wallet, usdtBalance: 0, spotBalance: 0, referralCode, referredBy, spotid, signupDevice: device });

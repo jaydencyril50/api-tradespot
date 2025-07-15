@@ -1,17 +1,27 @@
 import BuyerModel from '../models/Buyermodel';
 
-// This function randomizes the status of all buyers every 2 hours
+// This function cycles the status of all buyers in a fixed order:
+// online (2h), recently (30m), offline (30m), then repeat
 export async function randomizeBuyerStatuses() {
-  const statuses = ['online', 'offline', 'recently'];
   const buyers = await BuyerModel.find();
-  for (const buyer of buyers) {
-    let newStatus = statuses[Math.floor(Math.random() * statuses.length)] as 'online' | 'offline' | 'recently';
-    // Avoid repeating the same status
-    while (newStatus === buyer.status && statuses.length > 1) {
-      newStatus = statuses[Math.floor(Math.random() * statuses.length)] as 'online' | 'offline' | 'recently';
-    }
-    buyer.status = newStatus;
-    await buyer.save();
+  // Determine the current phase based on the time since a fixed epoch
+  // online: 0-2h, recently: 2h-2.5h, offline: 2.5h-3h, then repeat
+  const now = Date.now();
+  const cycleMs = 3 * 60 * 60 * 1000; // 3 hours in ms
+  const phase = (now % cycleMs);
+  let newStatus: 'online' | 'recently' | 'offline';
+  if (phase < 2 * 60 * 60 * 1000) {
+    newStatus = 'online';
+  } else if (phase < 2.5 * 60 * 60 * 1000) {
+    newStatus = 'recently';
+  } else {
+    newStatus = 'offline';
   }
-  console.log('Buyer statuses randomized at', new Date().toISOString());
+  for (const buyer of buyers) {
+    if (buyer.status !== newStatus) {
+      buyer.status = newStatus;
+      await buyer.save();
+    }
+  }
+  console.log(`Buyer statuses set to '${newStatus}' at`, new Date().toISOString());
 }

@@ -260,6 +260,24 @@ router.post('/deposits/:id/approve', authenticateToken, async (req: Request, res
                 note: 'Deposit approved by admin'
             });
             await user.save();
+
+            // Team Rebate logic: credit referrer with 5% of deposit
+            if (user.referredBy) {
+                const referrer = await User.findOne({ referralCode: user.referredBy });
+                if (referrer) {
+                    const rebateAmount = Math.floor((deposit.amount ?? 0) * 0.05 * 100) / 100; // round to 2 decimals
+                    referrer.flexBalance = (referrer.flexBalance || 0) + rebateAmount;
+                    referrer.recentTransactions = referrer.recentTransactions || [];
+                    referrer.recentTransactions.push({
+                        type: 'Team Rebate',
+                        amount: rebateAmount,
+                        currency: 'FLEX',
+                        date: new Date(),
+                        note: `Earned 5% rebate from team member ${user.fullName}'s deposit`
+                    });
+                    await referrer.save();
+                }
+            }
         }
         await Notification.create({
             userId: deposit.userId,

@@ -76,14 +76,14 @@ router.post('/generate-buyers', async (_req, res) => {
     for (let vipLevel = 1; vipLevel <= 3; vipLevel++) {
       let minPercent, maxPercent;
       if (vipLevel === 1) {
-        minPercent = 0.9;
-        maxPercent = 1.0;
+        minPercent = 1.0;
+        maxPercent = 1.15;
       } else if (vipLevel === 2) {
         minPercent = 1.1;
-        maxPercent = 1.2;
+        maxPercent = 1.35;
       } else {
-        minPercent = 1.4;
-        maxPercent = 1.5;
+        minPercent = 1.35;
+        maxPercent = 1.6;
       }
       for (let bucket = 0; bucket < minLimitBuckets.length; bucket++) {
         for (let j = 0; j < 20; j++) {

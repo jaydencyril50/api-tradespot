@@ -47,6 +47,8 @@ export interface UserDocument extends Document {
     botOrderType: "buy" | "sell" | "both";
     botRunTime: string;
     botLastRun: Date | null;
+    botType?: string; // Name of the bot (e.g., AlphaBot)
+    botPercent?: number; // Commission percent (e.g., 4 for 4%)
     // Extend with more fields as needed
 }
 
@@ -129,6 +131,8 @@ const userSchema = new mongoose.Schema({
     botOrderType: { type: String, enum: ["buy", "sell", "both"], default: "buy" },
     botRunTime: { type: String, default: "09:00" },
     botLastRun: { type: Date, default: null },
+    botType: { type: String, default: "AlphaBot" },
+    botPercent: { type: Number, default: 4 }, // Default 4% commission
 });
 
 // Add toJSON transform to auto-handle Buffers for webauthnCredentials

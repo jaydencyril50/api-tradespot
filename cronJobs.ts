@@ -132,7 +132,7 @@ cron.schedule('*/10 * * * *', async () => {
           // Simulate instant completion for automation
           user.usdtBalance -= order.usdtAmount;
           user.spotBalance += order.spotAmount;
-          profit += (order.spotAmount * (marketPrice - order.price)); // profit if market price > buy price
+          profit += (order.spotAmount * order.price); // profit based on trader's price only
         }
       }
       // Place sell order if user has SPOT and bot is set to sell or both
@@ -146,7 +146,7 @@ cron.schedule('*/10 * * * *', async () => {
           // Simulate instant completion for automation
           user.spotBalance -= order.spotAmount;
           user.usdtBalance += order.usdtAmount;
-          profit += ((order.price - marketPrice) * order.spotAmount); // profit if sell price > market price
+          profit += (order.price * order.spotAmount); // profit based on trader's price only
         }
       }
       // Deduct bot commission and credit profit to FLEX balance if any

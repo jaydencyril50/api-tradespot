@@ -52,7 +52,6 @@ import { asyncHandler, logActivity, ActivityType } from './utils/utility';
 import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 import webauthnSettingsRouter from './routes/webauthnSettings';
 const flexDropLinkRouter = require('./routes/flexDropLink'); 
-import runBotOrders from './cron/botOrderScheduler';
 import botRouter from './routes/bot';
 
 const app = express();

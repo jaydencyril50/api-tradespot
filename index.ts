@@ -55,6 +55,9 @@ const flexDropLinkRouter = require('./routes/flexDropLink');
 import runBotOrders from './cron/botOrderScheduler';
 
 const app = express();
+// Mount bot routes
+import botRouter from './routes/bot';
+app.use('/api/bot', botRouter);
 // Update CORS configuration to allow all related domains as specified
 const allowedOrigins = [
   'https://www.tradespot.online',
@@ -211,6 +214,3 @@ server.listen(PORT, () => {
 
 // Catch-all 404 logger (should be last middleware before app.listen)
 app.use(notFoundHandler);
-
-// The bot scheduler is started automatically by node-cron in botOrderScheduler.ts
-// No need to call runBotOrders() directly unless for manual trigger

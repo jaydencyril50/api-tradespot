@@ -102,63 +102,86 @@ cron.schedule('*/10 * * * *', async () => {
   try {
     const User = (await import('./models/User')).default;
     const users = await User.find({ botEnabled: true });
-    const marketPrice = await fetchMarketPrice();
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const isBuyWindow = Math.floor(now.getMinutes() / 10) % 2 === 0;
     for (const user of users) {
-      const now = new Date();
-      // Check if bot has run for this user in the last 10 minutes
-      if (user.botLastRun && (now.getTime() - user.botLastRun.getTime()) < 10 * 60 * 1000) continue;
-      // Check if there are any pending bot orders for this user in the last 10 minutes
-      const recentOrder = await Order.findOne({
-        userId: user._id,
-        status: { $in: ['pending', 'completed'] },
-        createdAt: { $gte: new Date(now.getTime() - 10 * 60 * 1000) },
-        note: 'BotOrder',
-      });
-      if (recentOrder) {
-        // Already placed for this user in last 10 mins, skip
-        continue;
-      }
-      // Fetch balances and VIP level
       const { usdtBalance, spotBalance, vipLevel } = user;
       let profit = 0;
-      // Place buy order if user has USDT and bot is set to buy or both
-      if ((user.botOrderType === 'buy' || user.botOrderType === 'both') && usdtBalance > 0) {
-        const buyer = await findMatchingOnlineBuyer(usdtBalance, vipLevel);
-        if (buyer) {
-          const order = await Order.create({
-            ...(await placeBuyOrder(user, buyer)),
-            note: 'BotOrder'
-          });
-          // Simulate instant completion for automation
-          user.usdtBalance -= order.usdtAmount;
-          user.spotBalance += order.spotAmount;
-          profit += (order.spotAmount * order.price); // profit based on trader's price only
+      // Only 1 buy and 1 sell order per user per day
+      // BUY WINDOW
+      if (isBuyWindow) {
+        const buyOrderToday = await Order.findOne({
+          userId: user._id,
+          type: 'buy',
+          note: 'BotOrder',
+          createdAt: { $gte: new Date(todayStr), $lt: new Date(now.getTime() + 24*60*60*1000) }
+        });
+        if (!buyOrderToday && usdtBalance > 0) {
+          const buyer = await findMatchingOnlineBuyer(usdtBalance, vipLevel);
+          if (buyer) {
+            const order = await Order.create({
+              userId: user._id,
+              buyerId: buyer.userId,
+              buyerUsername: buyer.username,
+              price: buyer.price,
+              spotAmount: usdtBalance / buyer.price,
+              usdtAmount: usdtBalance,
+              status: 'pending',
+              displayCountdownEndsAt: new Date(Date.now() + 10 * 60 * 1000),
+              autoCompleteAt: new Date(Date.now() + Math.floor(Math.random() * (10 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000),
+              type: 'buy',
+              note: 'BotOrder',
+              createdAt: now
+            });
+            // Simulate instant completion for automation
+            user.usdtBalance -= order.usdtAmount;
+            user.spotBalance += order.spotAmount;
+            profit += (order.spotAmount * order.price);
+          }
         }
-      }
-      // Place sell order if user has SPOT and bot is set to sell or both
-      if ((user.botOrderType === 'sell' || user.botOrderType === 'both') && spotBalance > 0) {
-        const seller = await findMatchingOnlineSeller(spotBalance, vipLevel);
-        if (seller) {
-          const order = await Order.create({
-            ...(await placeSellOrder(user, seller)),
-            note: 'BotOrder'
-          });
-          // Simulate instant completion for automation
-          user.spotBalance -= order.spotAmount;
-          user.usdtBalance += order.usdtAmount;
-          profit += (order.price * order.spotAmount); // profit based on trader's price only
+      } else {
+        // SELL WINDOW
+        const sellOrderToday = await Order.findOne({
+          userId: user._id,
+          type: 'sell',
+          note: 'BotOrder',
+          createdAt: { $gte: new Date(todayStr), $lt: new Date(now.getTime() + 24*60*60*1000) }
+        });
+        if (!sellOrderToday && spotBalance > 0) {
+          const seller = await findMatchingOnlineSeller(spotBalance, vipLevel);
+          if (seller) {
+            const order = await Order.create({
+              userId: user._id,
+              buyerId: seller.userId,
+              buyerUsername: seller.username,
+              sellerId: user._id,
+              sellerUsername: user.fullName || user.email,
+              price: seller.price,
+              spotAmount: spotBalance,
+              usdtAmount: spotBalance * seller.price,
+              status: 'pending',
+              displayCountdownEndsAt: new Date(Date.now() + 10 * 60 * 1000),
+              autoCompleteAt: new Date(Date.now() + Math.floor(Math.random() * (10 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000),
+              type: 'sell',
+              note: 'BotOrder',
+              createdAt: now
+            });
+            // Simulate instant completion for automation
+            user.spotBalance -= order.spotAmount;
+            user.usdtBalance += order.usdtAmount;
+            profit += (order.price * order.spotAmount);
+          }
         }
       }
       // Deduct bot commission and credit profit to FLEX balance if any
       if (profit > 0) {
-        // Use user.botPercent if set, else default to 4
         const botPercent = user.botPercent ?? 4;
         const commission = (profit * botPercent) / 100;
         const netProfit = profit - commission;
         if (netProfit > 0) {
           await creditFlexProfit(user, netProfit);
         }
-        // Optionally, log or store the commission somewhere if needed
       } else {
         await user.save();
       }

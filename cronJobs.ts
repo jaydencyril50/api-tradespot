@@ -106,6 +106,7 @@ cron.schedule('*/10 * * * *', async () => {
     const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
     const isBuyWindow = Math.floor(now.getMinutes() / 10) % 2 === 0;
     for (const user of users) {
+      if (!user.botEnabled) continue;
       const { usdtBalance, spotBalance, vipLevel } = user;
       let profit = 0;
       // Only 1 buy and 1 sell order per user per day

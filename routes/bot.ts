@@ -4,8 +4,8 @@ import User from '../models/User';
 
 const router = express.Router();
 
-// GET /api/bot-settings - Get logged-in user's bot settings
-router.get('/bot-settings', authenticateToken, async (req: Request, res: Response) => {
+// GET /api/bot - Get logged-in user's bot settings
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const user = await User.findById(userId);
@@ -26,8 +26,8 @@ router.get('/bot-settings', authenticateToken, async (req: Request, res: Respons
   }
 });
 
-// PUT /api/bot-settings - Update logged-in user's bot settings
-router.put('/bot-settings', authenticateToken, async (req: Request, res: Response) => {
+// PUT /api/bot - Update logged-in user's bot settings
+router.put('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const user = await User.findById(userId);

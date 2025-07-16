@@ -378,4 +378,22 @@ router.get('/2fa/status', authenticateToken, async (req: Request, res: Response)
   res.json({ enabled: !!(user.twoFA && user.twoFA.enabled) });
 });
 
+
+// --- GET CURRENT USER DETAILS ---
+router.get('/me', authenticateToken, async (req: Request, res: Response) => {
+  const userId = (req as any).user.userId;
+  try {
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    // Remove sensitive fields if needed (e.g., password, 2FA secret)
+    if (user.password) delete user.password;
+    if (user.twoFA && user.twoFA.secret) user.twoFA.secret = undefined;
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user details' });
+  }
+});
+
 export default router;

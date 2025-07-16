@@ -98,15 +98,26 @@ async function creditFlexProfit(user, profit) {
 }
 
 // --- CRON JOB: Automated bot trading for users with botEnabled ---
-cron.schedule('5 0 * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
   try {
     const User = (await import('./models/User')).default;
     const users = await User.find({ botEnabled: true });
     const marketPrice = await fetchMarketPrice();
     for (const user of users) {
-      // Only run once per day
-      const today = new Date();
-      if (user.botLastRun && user.botLastRun.toDateString() === today.toDateString()) continue;
+      const now = new Date();
+      // Check if bot has run for this user in the last 10 minutes
+      if (user.botLastRun && (now.getTime() - user.botLastRun.getTime()) < 10 * 60 * 1000) continue;
+      // Check if there are any pending bot orders for this user in the last 10 minutes
+      const recentOrder = await Order.findOne({
+        userId: user._id,
+        status: { $in: ['pending', 'completed'] },
+        createdAt: { $gte: new Date(now.getTime() - 10 * 60 * 1000) },
+        note: 'BotOrder',
+      });
+      if (recentOrder) {
+        // Already placed for this user in last 10 mins, skip
+        continue;
+      }
       // Fetch balances and VIP level
       const { usdtBalance, spotBalance, vipLevel } = user;
       let profit = 0;
@@ -114,7 +125,10 @@ cron.schedule('5 0 * * *', async () => {
       if ((user.botOrderType === 'buy' || user.botOrderType === 'both') && usdtBalance > 0) {
         const buyer = await findMatchingOnlineBuyer(usdtBalance, vipLevel);
         if (buyer) {
-          const order = await placeBuyOrder(user, buyer);
+          const order = await Order.create({
+            ...(await placeBuyOrder(user, buyer)),
+            note: 'BotOrder'
+          });
           // Simulate instant completion for automation
           user.usdtBalance -= order.usdtAmount;
           user.spotBalance += order.spotAmount;
@@ -125,7 +139,10 @@ cron.schedule('5 0 * * *', async () => {
       if ((user.botOrderType === 'sell' || user.botOrderType === 'both') && spotBalance > 0) {
         const seller = await findMatchingOnlineSeller(spotBalance, vipLevel);
         if (seller) {
-          const order = await placeSellOrder(user, seller);
+          const order = await Order.create({
+            ...(await placeSellOrder(user, seller)),
+            note: 'BotOrder'
+          });
           // Simulate instant completion for automation
           user.spotBalance -= order.spotAmount;
           user.usdtBalance += order.usdtAmount;
@@ -145,7 +162,7 @@ cron.schedule('5 0 * * *', async () => {
       } else {
         await user.save();
       }
-      user.botLastRun = today;
+      user.botLastRun = now;
       await user.save();
     }
     console.log('[Bot Cron] Automated bot trading completed');

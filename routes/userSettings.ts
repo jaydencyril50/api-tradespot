@@ -318,6 +318,32 @@ router.put('/portfolio', authenticateToken, async (req: Request, res: Response) 
     }
 });
 
+// --- BOT SETTINGS UPDATE ---
+router.put('/bot-settings', authenticateToken, async (req: Request, res: Response) => {
+    const userId = (req as any).user.userId;
+    const { botEnabled, botDailyOrderAmount, botOrderType, botRunTime } = req.body;
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        if (typeof botEnabled === 'boolean') user.botEnabled = botEnabled;
+        if (typeof botDailyOrderAmount === 'number') user.botDailyOrderAmount = botDailyOrderAmount;
+        if (typeof botOrderType === 'string' && ["buy", "sell", "both"].includes(botOrderType)) user.botOrderType = botOrderType;
+        if (typeof botRunTime === 'string') user.botRunTime = botRunTime;
+        await user.save();
+        res.json({ message: 'Bot settings updated', botSettings: {
+            botEnabled: user.botEnabled,
+            botDailyOrderAmount: user.botDailyOrderAmount,
+            botOrderType: user.botOrderType,
+            botRunTime: user.botRunTime
+        }});
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update bot settings' });
+    }
+});
+
 // --- 2FA SETUP ---
 router.post('/2fa/setup', authenticateToken, async (req: Request, res: Response) => {
   const userId = (req as any).user.userId;

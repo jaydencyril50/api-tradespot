@@ -41,6 +41,12 @@ export interface UserDocument extends Document {
         nickname?: string;
     }>;
 
+    // Automated order bot fields
+    botEnabled: boolean;
+    botDailyOrderAmount: number;
+    botOrderType: "buy" | "sell" | "both";
+    botRunTime: string;
+    botLastRun: Date | null;
     // Extend with more fields as needed
 }
 
@@ -117,6 +123,12 @@ const userSchema = new mongoose.Schema({
     },
     // Device ID for signup tracking
     signupDevice: { type: String, unique: true, sparse: true },
+    // Automated order bot fields
+    botEnabled: { type: Boolean, default: false },
+    botDailyOrderAmount: { type: Number, default: 0 },
+    botOrderType: { type: String, enum: ["buy", "sell", "both"], default: "buy" },
+    botRunTime: { type: String, default: "09:00" },
+    botLastRun: { type: Date, default: null },
 });
 
 // Add toJSON transform to auto-handle Buffers for webauthnCredentials

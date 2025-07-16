@@ -52,6 +52,7 @@ import { asyncHandler, logActivity, ActivityType } from './utils/utility';
 import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 import webauthnSettingsRouter from './routes/webauthnSettings';
 const flexDropLinkRouter = require('./routes/flexDropLink'); 
+import runBotOrders from './cron/botOrderScheduler';
 
 const app = express();
 // Update CORS configuration to allow all related domains as specified
@@ -203,10 +204,13 @@ startFlexProfitMonitor();
 // Trust proxy to handle X-Forwarded-For header for express-rate-limit (secure setting)
 app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
 // Catch-all 404 logger (should be last middleware before app.listen)
 app.use(notFoundHandler);
+
+// The bot scheduler is started automatically by node-cron in botOrderScheduler.ts
+// No need to call runBotOrders() directly unless for manual trigger

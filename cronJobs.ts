@@ -101,12 +101,12 @@ async function creditFlexProfit(user, profit) {
 cron.schedule('*/10 * * * *', async () => {
   try {
     const User = (await import('./models/User')).default;
-    const users = await User.find({ botEnabled: true });
+    const users = await User.find({ hasBoughtBot: true });
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
     const isBuyWindow = Math.floor(now.getMinutes() / 10) % 2 === 0;
     for (const user of users) {
-      if (!user.botEnabled) continue;
+      // Bot is always enabled for users who have bought it
       const { usdtBalance, spotBalance, vipLevel } = user;
       let profit = 0;
       // Only 1 buy and 1 sell order per user per day

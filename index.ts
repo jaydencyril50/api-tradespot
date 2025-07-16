@@ -53,11 +53,10 @@ import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 import webauthnSettingsRouter from './routes/webauthnSettings';
 const flexDropLinkRouter = require('./routes/flexDropLink'); 
 import runBotOrders from './cron/botOrderScheduler';
+import botRouter from './routes/bot';
 
 const app = express();
-// Mount bot routes
-import botRouter from './routes/bot';
-app.use('/api/bot', botRouter);
+
 // Update CORS configuration to allow all related domains as specified
 const allowedOrigins = [
   'https://www.tradespot.online',
@@ -163,6 +162,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
 app.use('/api/flex-drop', flexDropLinkRouter);
 app.use('/api/reward', rewardRouter);
+app.use('/api/bot', botRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

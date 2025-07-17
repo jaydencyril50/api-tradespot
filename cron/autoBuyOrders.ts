@@ -78,7 +78,7 @@ export default async function autoBuyOrdersCron() {
       await createBuyOrder({
         userId: user._id,
         botId: bot._id,
-        buyerId: trader.userId, // Use userId from trader (matches BuyerModel.userId)
+        buyerId: trader.userId,
         buyerUsername: trader.username,
         price,
         spotAmount,

@@ -108,31 +108,48 @@ export default async function autoBuyOrdersCron() {
       type: 'sell',
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
-    if (existingSellOrderToday) continue;
+    if (existingSellOrderToday) {
+      console.log(`[Bot SellOrder] User ${user._id} already has a sell order today.`);
+      continue;
+    }
 
     // Allow sell order if user has any SPOT (from a buy order or otherwise)
     const spotBalance = user.spotBalance || 0;
-    // Remove the old check: if (spotBalance >= 0.02) continue;
+    console.log(`[Bot SellOrder] User ${user._id} spotBalance: ${spotBalance}`);
 
     // Check bot's min/max sell (optional, if you want to keep this logic)
     const minSell = bot.rules?.minSell || 0;
     const maxSell = bot.rules?.maxSell || bot.tradeLimit;
-    if (spotBalance < minSell) continue;
+    console.log(`[Bot SellOrder] Bot minSell: ${minSell}, maxSell: ${maxSell}`);
+    if (spotBalance < minSell) {
+      console.log(`[Bot SellOrder] User ${user._id} spotBalance (${spotBalance}) < bot minSell (${minSell})`);
+      continue;
+    }
 
     // Find an online seller with a matching trade limit and user's vip level
     const SellerModel = require('../models/Sellermodel').default;
     const vipLevel = user.vipLevel || 1;
     const onlineSellers = await SellerModel.find({ status: 'online', vipLevel });
+    console.log(`[Bot SellOrder] Found ${onlineSellers.length} online sellers for VIP ${vipLevel}`);
     const seller = onlineSellers.find((s: any) => spotBalance >= s.minLimit && spotBalance <= s.maxLimit);
-    if (!seller) continue;
+    if (!seller) {
+      console.log(`[Bot SellOrder] No seller found for user ${user._id} with spotBalance ${spotBalance}`);
+      continue;
+    }
+    console.log(`[Bot SellOrder] Selected seller ${seller.userId} minLimit: ${seller.minLimit}, maxLimit: ${seller.maxLimit}`);
 
     // Calculate sell order amount (respect bot and seller limits)
     let sellAmount = Math.min(spotBalance, maxSell, seller.maxLimit);
-    if (sellAmount < minSell) continue;
+    if (sellAmount < minSell) {
+      console.log(`[Bot SellOrder] Calculated sellAmount (${sellAmount}) < bot minSell (${minSell})`);
+      continue;
+    }
+    console.log(`[Bot SellOrder] Final sellAmount: ${sellAmount}`);
 
     // Place the sell order
     const price = seller.price;
     const usdtAmount = sellAmount * price;
+    console.log(`[Bot SellOrder] Placing sell order: user ${user._id}, seller ${seller.userId}, spotAmount ${sellAmount}, usdtAmount ${usdtAmount}, price ${price}`);
     const displayCountdownEndsAt = new Date(Date.now() + 10 * 60 * 1000);
     const minMs = 1 * 60 * 1000, maxMs = 10 * 60 * 1000;
     const randomMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;

@@ -7,19 +7,22 @@ export async function randomizeBuyerStatuses() {
   // Get the current hour since epoch
   const hour = Math.floor(Date.now() / (60 * 60 * 1000));
   for (const buyer of buyers) {
-    // Use a seeded random function based on buyer id and hour
-    const seed = `${buyer._id}-${hour}`;
-    let h = 2166136261 >>> 0;
+    // Use a seeded hash with more entropy for better spread
+    const seed = `${buyer._id}-${buyer.userId}-${hour}`;
+    let h = 0;
     for (let i = 0; i < seed.length; i++) {
-      h ^= seed.charCodeAt(i);
-      h = Math.imul(h, 16777619);
+      h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
     }
-    const rand = (h >>> 0) / 4294967295;
-    const randomStatus = statuses[Math.floor(rand * statuses.length)];
+    const index = Math.abs(h) % statuses.length;
+    const randomStatus = statuses[index];
     if (buyer.status !== randomStatus) {
       buyer.status = randomStatus;
       await buyer.save();
     }
   }
+  // Log the spread for debugging
+  const count = { online: 0, recently: 0, offline: 0 };
+  buyers.forEach(b => count[b.status as keyof typeof count]++);
+  console.log('Status spread:', count);
   console.log(`Buyer statuses randomized per hour at`, new Date().toISOString());
 }

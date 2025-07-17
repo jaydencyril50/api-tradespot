@@ -47,11 +47,12 @@ export async function createSellOrder({
     if (seller.vipLevel !== user.vipLevel) {
       throw new Error('Seller VIP level does not match user VIP level');
     }
-    // Check if user's SPOT balance (or order amount) is within seller's min/max trade limits
-    const minSell = seller.minLimit || 0;
-    const maxSell = seller.maxLimit || Number.MAX_SAFE_INTEGER;
-    if (spotAmount < minSell || spotAmount > maxSell) {
-      throw new Error(`Seller's trade limit is ${minSell}-${maxSell} SPOT. Your order amount is not within this range.`);
+    // Check if user's SPOT balance (converted to USDT) is within seller's min/max trade limits (USDT)
+    const minSellUsdt = seller.minLimit || 0;
+    const maxSellUsdt = seller.maxLimit || Number.MAX_SAFE_INTEGER;
+    const spotAmountUsdt = spotAmount * price;
+    if (spotAmountUsdt < minSellUsdt || spotAmountUsdt > maxSellUsdt) {
+      throw new Error(`Seller's trade limit is ${minSellUsdt}-${maxSellUsdt} USDT. Your order amount (${spotAmountUsdt} USDT) is not within this range.`);
     }
   }
   const completedToday = await Order.findOne({

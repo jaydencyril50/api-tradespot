@@ -1,3 +1,4 @@
+
 import express, { Request, Response } from 'express';
 import Bot from '../models/Bot';
 import User from '../models/User';
@@ -5,6 +6,18 @@ import mongoose from 'mongoose';
 import authenticateToken from '../middleware/authenticateToken';
 
 const router = express.Router();
+
+// Get current user's bot subscriptions
+router.get('/subscriptions', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ subscriptions: user.botSubscriptions || [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Get all bots
 router.get('/bots', async (_req: Request, res: Response) => {

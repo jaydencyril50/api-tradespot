@@ -109,8 +109,11 @@ export default async function autoBuyOrdersCron() {
     });
     if (existingSellOrderToday) continue;
 
-    // Check user's SPOT balance and bot's min/max sell
+    // Check user's SPOT balance: must be below 0.02 to place a sell order
     const spotBalance = user.spotBalance || 0;
+    if (spotBalance >= 0.02) continue;
+
+    // Check bot's min/max sell (optional, if you want to keep this logic)
     const minSell = bot.rules?.minSell || 0;
     const maxSell = bot.rules?.maxSell || bot.tradeLimit;
     if (spotBalance < minSell) continue;

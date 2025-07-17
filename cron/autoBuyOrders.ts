@@ -4,6 +4,8 @@ import Order from '../models/Order';
 
 import BuyerModel from '../models/Buyermodel';
 
+import { createBuyOrder } from '../services/orderService';
+
 
 // Fetch online buyers with matching vipLevel and return their trade limits
 async function getOnlineBuyTraders(vipLevel: number) {
@@ -64,20 +66,21 @@ export default async function autoBuyOrdersCron() {
     const price = trader.price;
     const usdtAmount = orderAmount;
     const spotAmount = usdtAmount / price;
-    await Order.create({
-      userId: user._id,
-      botId: bot._id,
-      // traderId is not in Order schema, use buyerId and buyerUsername as required
-      buyerId: trader._id,
-      buyerUsername: trader.username,
-      price,
-      spotAmount,
-      usdtAmount,
-      type: 'buy',
-      status: 'pending',
-      createdAt: new Date(),
-      // ...other fields as needed
-    });
+    try {
+      await createBuyOrder({
+        userId: user._id,
+        botId: bot._id,
+        buyerId: trader._id,
+        buyerUsername: trader.username,
+        price,
+        spotAmount,
+        usdtAmount,
+        isBot: true
+      });
+    } catch (err) {
+      // Optionally log error
+      console.error('[Bot Auto Buy Orders] Error:', err);
+    }
     // Optionally, deduct balance, send notification, etc.
   }
 }

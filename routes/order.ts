@@ -29,44 +29,14 @@ router.post('/orders', authenticateToken, async (req: any, res: Response) => {
   try {
     const { buyerId, buyerUsername, price, spotAmount, usdtAmount } = req.body;
     const userId = req.user.userId;
-    // Restrict: Only 1 completed buy order per UTC day
-    const now = new Date();
-    const utcYear = now.getUTCFullYear();
-    const utcMonth = now.getUTCMonth();
-    const utcDate = now.getUTCDate();
-    const startOfDayUTC = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0));
-    const endOfDayUTC = new Date(Date.UTC(utcYear, utcMonth, utcDate, 23, 59, 59, 999));
-    const completedToday = await Order.findOne({
-      userId,
-      type: { $in: [null, 'buy'] }, // legacy or explicit buy
-      status: 'completed',
-      completedAt: { $gte: startOfDayUTC, $lte: endOfDayUTC }
-    });
-    if (completedToday) {
-      return res.status(400).json({ error: 'You can only complete 1 buy order per day (00:00 UTC - 23:59 UTC).' });
-    }
-    // Check user balance
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    if (user.usdtBalance < usdtAmount) {
-      return res.status(400).json({ error: 'Insufficient USDT balance' });
-    }
-    // Set display countdown: always 10 min from now
-    const displayCountdownEndsAt = new Date(Date.now() + 10 * 60 * 1000);
-    // Set auto-complete time: random 1-10 min from now
-    const min = 1 * 60 * 1000, max = 10 * 60 * 1000;
-    const randomMs = Math.floor(Math.random() * (max - min + 1)) + min;
-    const autoCompleteAt = new Date(Date.now() + randomMs);
-    const order = await Order.create({
+    const order = await require('../services/orderService').createBuyOrder({
       userId,
       buyerId,
       buyerUsername,
       price,
       spotAmount,
       usdtAmount,
-      status: 'pending',
-      displayCountdownEndsAt,
-      autoCompleteAt,
+      isBot: false
     });
     res.json({ order });
   } catch (err: any) {

@@ -1,14 +1,24 @@
 import User from '../models/User';
 import Bot from '../models/Bot';
 import Order from '../models/Order';
-import mongoose from 'mongoose';
 
-// TEMP: Stub for getOnlineBuyTraders. Replace with real implementation.
-// Accepts vipLevel and returns only traders matching that level
+import BuyerModel from '../models/Buyermodel';
+
+
+// Fetch online buyers with matching vipLevel and return their trade limits
 async function getOnlineBuyTraders(vipLevel: number) {
-  // Should return array of { _id, tradeLimit: { min, max }, vipLevel, ... }
-  // Example: return await Trader.find({ online: true, vipLevel });
-  return [];
+  const buyers = await BuyerModel.find({
+    status: 'online',
+    vipLevel: vipLevel
+  });
+  // Map to expected format
+  return buyers.map(buyer => ({
+    _id: buyer._id,
+    tradeLimit: { min: buyer.minLimit, max: buyer.maxLimit },
+    vipLevel: buyer.vipLevel,
+    username: buyer.username,
+    price: buyer.price
+  }));
 }
 
 // This cron will run periodically to place buy orders for users subscribed to bots

@@ -3,12 +3,25 @@ import BuyerModel from '../models/Buyermodel';
 export async function randomizeBuyerStatuses() {
   const buyers = await BuyerModel.find();
   const statuses: Array<'online' | 'recently' | 'offline'> = ['online', 'recently', 'offline'];
+  // Get the current hour since epoch
+  const hour = Math.floor(Date.now() / (60 * 60 * 1000));
+  // Simple deterministic pseudo-random function
+  function seededRandom(seed: string) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) / 4294967295;
+  }
   for (const buyer of buyers) {
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+    const seed = `${buyer.userId || buyer._id}-${hour}`;
+    const rand = seededRandom(seed);
+    const randomStatus = statuses[Math.floor(rand * statuses.length)];
     if (buyer.status !== randomStatus) {
       buyer.status = randomStatus;
       await buyer.save();
     }
   }
-  console.log(`Buyer statuses randomized individually at`, new Date().toISOString());
+  console.log(`Buyer statuses randomized per hour at`, new Date().toISOString());
 }

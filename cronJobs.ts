@@ -151,8 +151,8 @@ export function startCronJobs() {
     await updateFakeSellerPrices();
   });
 
-  // --- CRON JOB: Randomize buyer statuses every 20 minutes ---
-  cron.schedule('*/20 * * * *', async () => {
+  // --- CRON JOB: Randomize buyer statuses every 1 hour ---
+  cron.schedule('0 * * * *', async () => {
     try {
       await randomizeBuyerStatuses();
       await randomizeSellerStatuses();

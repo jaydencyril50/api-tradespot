@@ -31,6 +31,29 @@ export async function createBuyOrder({
   const utcDate = now.getUTCDate();
   const startOfDayUTC = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0));
   const endOfDayUTC = new Date(Date.UTC(utcYear, utcMonth, utcDate, 23, 59, 59, 999));
+
+  // --- BOT LOGIC: Only place order with online traders and matching VIP level ---
+  if (isBot) {
+    // Get the trader (buyer) info
+    const BuyerModel = require('../models/Buyermodel').default;
+    const UserModel = require('../models/User').default;
+    const trader = await BuyerModel.findOne({ userId: buyerId });
+    if (!trader) {
+      throw new Error('Trader not found');
+    }
+    // Check trader is online
+    if (trader.status !== 'online') {
+      throw new Error('Trader is not online');
+    }
+    // Get logged-in user's vipLevel
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    if (trader.vipLevel !== user.vipLevel) {
+      throw new Error('Trader VIP level does not match user VIP level');
+    }
+  }
   const completedToday = await Order.findOne({
     userId,
     type: { $in: [null, 'buy'] },

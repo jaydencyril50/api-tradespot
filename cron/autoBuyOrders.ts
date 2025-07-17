@@ -60,12 +60,19 @@ export default async function autoBuyOrdersCron() {
     if (orderAmount < minTrade) continue;
 
     // Deduct commission if needed (not implemented here)
-    // Place the order
+    // Place the order with all required fields
+    const price = trader.price;
+    const usdtAmount = orderAmount;
+    const spotAmount = usdtAmount / price;
     await Order.create({
       userId: user._id,
       botId: bot._id,
-      traderId: trader._id,
-      amount: orderAmount,
+      // traderId is not in Order schema, use buyerId and buyerUsername as required
+      buyerId: trader._id,
+      buyerUsername: trader.username,
+      price,
+      spotAmount,
+      usdtAmount,
       type: 'buy',
       status: 'pending',
       createdAt: new Date(),

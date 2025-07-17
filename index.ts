@@ -150,6 +150,7 @@ app.use('/api/p2p', generateSellersRouter);
 app.use('/api/p2p', orderRoutes);
 app.use('/api/p2p', sellOrderRoutes);
 app.use('/api/notifications', notificationsRouter);
+
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/admin', adminRouter);
 app.use('/api', fundsRouter);
@@ -160,6 +161,9 @@ app.use('/api/admin/trash', trashRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
 app.use('/api/flex-drop', flexDropLinkRouter);
+
+// Mount reward routes
+app.use('/api/reward', rewardRouter);
 
 // Mount bot routes
 app.use('/api/bot', botRouter);

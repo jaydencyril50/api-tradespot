@@ -48,6 +48,7 @@ import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
 import announcementRouter from './routes/announcement';
 import { startCronJobs } from './cronJobs';
+import botRouter from './routes/bot';
 import { asyncHandler, logActivity, ActivityType } from './utils/utility';
 import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 import webauthnSettingsRouter from './routes/webauthnSettings';
@@ -159,7 +160,9 @@ app.use('/api/admin/trash', trashRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
 app.use('/api/flex-drop', flexDropLinkRouter);
-app.use('/api/reward', rewardRouter);
+
+// Mount bot routes
+app.use('/api/bot', botRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

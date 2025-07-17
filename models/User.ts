@@ -41,15 +41,13 @@ export interface UserDocument extends Document {
         nickname?: string;
     }>;
 
-    // Automated order bot fields
-    botEnabled: boolean;
-    botDailyOrderAmount: number;
-    botOrderType: "buy" | "sell" | "both";
-    botRunTime: string;
-    botLastRun: Date | null;
-    botType?: string; // Name of the bot (e.g., AlphaBot)
-    botPercent?: number; // Commission percent (e.g., 4 for 4%)
     // Extend with more fields as needed
+    botSubscriptions?: Array<{
+        botId: Types.ObjectId;
+        isActive: boolean;
+        customSettings?: any; // user-specific bot settings (optional)
+        subscribedAt: Date;
+    }>;
 }
 
 // 3. Define WebAuthnCredentialSchema as a subdocument schema
@@ -125,14 +123,16 @@ const userSchema = new mongoose.Schema({
     },
     // Device ID for signup tracking
     signupDevice: { type: String, unique: true, sparse: true },
-    // Automated order bot fields
-    botEnabled: { type: Boolean, default: false },
-    botDailyOrderAmount: { type: Number, default: 0 },
-    botOrderType: { type: String, enum: ["buy", "sell", "both"], default: "buy" },
-    botRunTime: { type: String, default: "09:00" },
-    botLastRun: { type: Date, default: null },
-    botType: { type: String, default: "AlphaBot" },
-    botPercent: { type: Number, default: 4 }, // Default 4% commission
+    // Bot subscriptions: array of { botId, isActive, customSettings, subscribedAt }
+    botSubscriptions: [
+        {
+            botId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bot', required: true },
+            isActive: { type: Boolean, default: true },
+            customSettings: { type: mongoose.Schema.Types.Mixed },
+            subscribedAt: { type: Date, default: Date.now }
+        }
+    ],
+
 });
 
 // Add toJSON transform to auto-handle Buffers for webauthnCredentials

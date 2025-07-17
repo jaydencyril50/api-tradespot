@@ -53,6 +53,13 @@ export async function createBuyOrder({
     if (trader.vipLevel !== user.vipLevel) {
       throw new Error('Trader VIP level does not match user VIP level');
     }
+    // Check if user's USDT balance (or order amount) is within trader's min/max trade limits
+    const minTrade = trader.rules?.minTrade || 0;
+    const maxTrade = trader.rules?.maxTrade || Number.MAX_SAFE_INTEGER;
+    // Use usdtAmount for the order amount check
+    if (usdtAmount < minTrade || usdtAmount > maxTrade) {
+      throw new Error(`Trader's trade limit is ${minTrade}-${maxTrade} USDT. Your order amount is not within this range.`);
+    }
   }
   const completedToday = await Order.findOne({
     userId,

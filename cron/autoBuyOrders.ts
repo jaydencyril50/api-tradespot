@@ -131,12 +131,17 @@ export default async function autoBuyOrdersCron() {
     const vipLevel = user.vipLevel || 1;
     const onlineSellers = await SellerModel.find({ status: 'online', vipLevel });
     console.log(`[Bot SellOrder] Found ${onlineSellers.length} online sellers for VIP ${vipLevel}`);
-    const seller = onlineSellers.find((s: any) => spotBalance >= s.minLimit && spotBalance <= s.maxLimit);
+    const seller = onlineSellers.find((s: any) => {
+      const spotAsUsdt = spotBalance * s.price;
+      const match = spotAsUsdt >= s.minLimit && spotAsUsdt <= s.maxLimit;
+      console.log(`[Bot SellOrder] Checking seller ${s.userId}: spotBalance ${spotBalance} * price ${s.price} = ${spotAsUsdt} USDT, minLimit: ${s.minLimit}, maxLimit: ${s.maxLimit}, match: ${match}`);
+      return match;
+    });
     if (!seller) {
-      console.log(`[Bot SellOrder] No seller found for user ${user._id} with spotBalance ${spotBalance}`);
+      console.log(`[Bot SellOrder] No seller found for user ${user._id} with spotBalance ${spotBalance} (converted to USDT)`);
       continue;
     }
-    console.log(`[Bot SellOrder] Selected seller ${seller.userId} minLimit: ${seller.minLimit}, maxLimit: ${seller.maxLimit}`);
+    console.log(`[Bot SellOrder] Selected seller ${seller.userId} minLimit: ${seller.minLimit}, maxLimit: ${seller.maxLimit}, price: ${seller.price}`);
 
     // Calculate sell order amount (respect bot and seller limits)
     let sellAmount = Math.min(spotBalance, maxSell, seller.maxLimit);

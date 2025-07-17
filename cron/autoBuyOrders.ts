@@ -163,10 +163,10 @@ export default async function autoBuyOrdersCron() {
       await createSellOrder({
         userId: user._id,
         botId: bot._id,
-        buyerId: seller.userId, // Fix: use buyerId for Order model
-        buyerUsername: seller.username, // Fix: use buyerUsername for Order model
-        sellerId: user._id,
-        sellerUsername: user.fullName || user.email,
+        buyerId: seller.userId, // The buyer is the user, but for the bot, this is the seller's userId
+        buyerUsername: seller.username,
+        sellerId: seller.userId, // Fix: use seller.userId to match SellerModel
+        sellerUsername: seller.username,
         price,
         spotAmount: sellAmount,
         usdtAmount,

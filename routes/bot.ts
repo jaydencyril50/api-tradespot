@@ -1,4 +1,3 @@
-
 import express, { Request, Response } from 'express';
 import Bot from '../models/Bot';
 import User from '../models/User';

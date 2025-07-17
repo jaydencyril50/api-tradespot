@@ -5,6 +5,7 @@ import Order from './models/Order';
 import User from './models/User';
 import { updateFakeBuyerPrices } from './cron/updateFakeBuyerPrices';
 import { updateFakeSellerPrices } from './cron/updateFakeSellerPrices';
+import autoBuyOrdersCron from './cron/autoBuyOrders';
 import { randomizeBuyerStatuses } from './utils/randomizeBuyerStatuses';
 import { randomizeSellerStatuses } from './utils/randomizeSellerStatuses';
 import { fetchMarketPrice } from './utils/fetchMarketPrice';
@@ -113,6 +114,14 @@ function getRandomLimits() {
 }
 
 export function startCronJobs() {
+  // --- CRON JOB: Run bot auto-buy orders every 2 minutes ---
+  cron.schedule('*/2 * * * *', async () => {
+    try {
+      await autoBuyOrdersCron();
+    } catch (err) {
+      console.error('[Bot Auto Buy Orders] Error:', err);
+    }
+  });
   // --- CRON: Randomly update trade limits every 24 hours
   cron.schedule('0 0 * * *', async () => {
     const buyers = await BuyerModel.find();

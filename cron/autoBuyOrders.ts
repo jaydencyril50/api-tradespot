@@ -27,7 +27,7 @@ async function getOnlineBuyTraders(vipLevel: number) {
 // This cron will run periodically to place buy orders for users subscribed to bots
 export default async function autoBuyOrdersCron() {
   const users = await User.find({ 'botSubscriptions.isActive': true });
-  for (const user of users) {
+  for (let user of users) {
     // Find the active bot subscription
     const activeSub = (user.botSubscriptions || []).find((sub: any) => sub.isActive);
     if (!activeSub) continue;
@@ -92,7 +92,7 @@ export default async function autoBuyOrdersCron() {
     // Optionally, deduct balance, send notification, etc.
   }
   // --- SELL ORDER LOGIC (bot) ---
-  for (const user of users) {
+  for (let user of users) {
     // Find the active bot subscription
     const activeSub = (user.botSubscriptions || []).find((sub: any) => sub.isActive);
     if (!activeSub) continue;
@@ -163,8 +163,10 @@ export default async function autoBuyOrdersCron() {
       await createSellOrder({
         userId: user._id,
         botId: bot._id,
-        sellerId: seller.userId,
-        sellerUsername: seller.username,
+        buyerId: seller.userId, // Fix: use buyerId for Order model
+        buyerUsername: seller.username, // Fix: use buyerUsername for Order model
+        sellerId: user._id,
+        sellerUsername: user.fullName || user.email,
         price,
         spotAmount: sellAmount,
         usdtAmount,
@@ -177,7 +179,10 @@ export default async function autoBuyOrdersCron() {
 
     // --- FLEX PROFIT CREDIT/DEACTIVATE ---
     // After sell order, if flexProfitActive and profit made, credit flex and deactivate
-    await user.reload();
+    // Re-fetch user from DB to get latest balances
+    const freshUser = await User.findById(user._id);
+    if (!freshUser) continue;
+    user = freshUser;
     if (user.flexProfitActive && typeof user.flexProfitUsdtRecord === 'number') {
       let profit = +(user.usdtBalance - user.flexProfitUsdtRecord).toFixed(2);
       if (profit > 0) {

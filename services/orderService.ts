@@ -4,6 +4,8 @@
  */
 export async function createSellOrder({
   userId,
+  buyerId,
+  buyerUsername,
   sellerId,
   sellerUsername,
   price,
@@ -13,6 +15,8 @@ export async function createSellOrder({
   isBot = false
 }: {
   userId: any,
+  buyerId?: any,
+  buyerUsername?: string,
   sellerId: any,
   sellerUsername: string,
   price: number,
@@ -78,6 +82,8 @@ export async function createSellOrder({
   const autoCompleteAt = new Date(Date.now() + randomMs);
   const order = await Order.create({
     userId,
+    buyerId,
+    buyerUsername,
     sellerId,
     sellerUsername,
     price,

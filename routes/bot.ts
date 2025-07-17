@@ -5,7 +5,7 @@ import User from '../models/User';
 const router = express.Router();
 
 // GET /api/bot - Get logged-in user's bot settings
-router.get('/', authenticateToken, async (req: Request, res: Response) => {
+router.get('/bot', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const user = await User.findById(userId);
@@ -27,7 +27,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
 });
 
 // PUT /api/bot - Update logged-in user's bot settings
-router.put('/', authenticateToken, async (req: Request, res: Response) => {
+router.put('/bot', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const user = await User.findById(userId);
@@ -49,7 +49,7 @@ router.put('/', authenticateToken, async (req: Request, res: Response) => {
 });
 
 // GET /api/bot/vip-level - Get logged-in user's VIP level
-router.get('/vip-level', authenticateToken, async (req: Request, res: Response) => {
+router.get('/bot/vip-level', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const user = await User.findById(userId);

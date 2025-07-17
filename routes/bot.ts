@@ -1,30 +1,9 @@
 import express, { Request, Response } from 'express';
 import authenticateToken from '../middleware/authenticateToken';
 import User from '../models/User';
+import Bot from '../models/Bot';
 
 const router = express.Router();
-
-// GET /api/bot - Get logged-in user's bot settings
-router.get('/', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.userId;
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    // Return bot settings (customize fields as needed)
-    res.json({
-      botEnabled: user.botEnabled || false,
-      botDailyOrderAmount: user.botDailyOrderAmount || 0,
-      botOrderType: user.botOrderType || 'buy',
-      botRunTime: user.botRunTime || '09:00',
-      botType: user.botType || 'AlphaBot',
-      botPercent: user.botPercent ?? 4,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch bot settings' });
-  }
-});
 
 // PUT /api/bot - Update logged-in user's bot settings
 router.put('/', authenticateToken, async (req: Request, res: Response) => {
@@ -42,6 +21,39 @@ router.put('/', authenticateToken, async (req: Request, res: Response) => {
     if (typeof botType !== 'undefined') user.botType = botType;
     if (typeof botPercent !== 'undefined') user.botPercent = botPercent;
     await user.save();
+
+    // Save bot details to Bot model when enabled
+    if (botEnabled) {
+      // Find or create bot for user
+      let botDoc = await Bot.findOne({ name: botType });
+      if (!botDoc) {
+        botDoc = new Bot({
+          name: botType,
+          tradeLimit: botDailyOrderAmount || 0,
+          commissionPercent: botPercent ?? 4,
+          isActive: true,
+          strategy: botOrderType || 'buy',
+          description: `Enabled by user ${userId}`,
+          settings: {
+            userId,
+            vipLevel: user.vipLevel || '',
+            runTime: botRunTime || '',
+          },
+        });
+      } else {
+        botDoc.tradeLimit = botDailyOrderAmount || botDoc.tradeLimit;
+        botDoc.commissionPercent = botPercent ?? botDoc.commissionPercent;
+        botDoc.isActive = true;
+        botDoc.strategy = botOrderType || botDoc.strategy;
+        botDoc.description = `Enabled by user ${userId}`;
+        botDoc.settings = {
+          userId,
+          vipLevel: user.vipLevel || '',
+          runTime: botRunTime || '',
+        };
+      }
+      await botDoc.save();
+    }
     res.json({ message: 'Bot settings updated!' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update bot settings' });

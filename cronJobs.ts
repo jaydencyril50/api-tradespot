@@ -97,101 +97,56 @@ async function creditFlexProfit(user, profit) {
   await user.save();
 }
 
-// --- CRON JOB: Automated bot trading for users with botEnabled ---
-cron.schedule('*/10 * * * *', async () => {
+// ...existing code...
+
+import Bot from './models/Bot';
+
+// --- CRON JOB: Place daily buy order for users with enabled bots ---
+cron.schedule('0 9 * * *', async () => {
   try {
-    const User = (await import('./models/User')).default;
-    const users = await User.find({ hasBoughtBot: true });
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
-    const isBuyWindow = Math.floor(now.getMinutes() / 10) % 2 === 0;
-    for (const user of users) {
-      // Bot is always enabled for users who have bought it
-      const { usdtBalance, spotBalance, vipLevel } = user;
-      let profit = 0;
-      // Only 1 buy and 1 sell order per user per day
-      // BUY WINDOW
-      if (isBuyWindow) {
-        const buyOrderToday = await Order.findOne({
-          userId: user._id,
-          type: 'buy',
-          note: 'BotOrder',
-          createdAt: { $gte: new Date(todayStr), $lt: new Date(now.getTime() + 24*60*60*1000) }
-        });
-        if (!buyOrderToday && usdtBalance > 0) {
-          const buyer = await findMatchingOnlineBuyer(usdtBalance, vipLevel);
-          if (buyer) {
-            const order = await Order.create({
-              userId: user._id,
-              buyerId: buyer.userId,
-              buyerUsername: buyer.username,
-              price: buyer.price,
-              spotAmount: usdtBalance / buyer.price,
-              usdtAmount: usdtBalance,
-              status: 'pending',
-              displayCountdownEndsAt: new Date(Date.now() + 10 * 60 * 1000),
-              autoCompleteAt: new Date(Date.now() + Math.floor(Math.random() * (10 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000),
-              type: 'buy',
-              note: 'BotOrder',
-              createdAt: now
-            });
-            // Simulate instant completion for automation
-            user.usdtBalance -= order.usdtAmount;
-            user.spotBalance += order.spotAmount;
-            profit += (order.spotAmount * order.price);
-          }
-        }
-      } else {
-        // SELL WINDOW
-        const sellOrderToday = await Order.findOne({
-          userId: user._id,
-          type: 'sell',
-          note: 'BotOrder',
-          createdAt: { $gte: new Date(todayStr), $lt: new Date(now.getTime() + 24*60*60*1000) }
-        });
-        if (!sellOrderToday && spotBalance > 0) {
-          const seller = await findMatchingOnlineSeller(spotBalance, vipLevel);
-          if (seller) {
-            const order = await Order.create({
-              userId: user._id,
-              buyerId: seller.userId,
-              buyerUsername: seller.username,
-              sellerId: user._id,
-              sellerUsername: user.fullName || user.email,
-              price: seller.price,
-              spotAmount: spotBalance,
-              usdtAmount: spotBalance * seller.price,
-              status: 'pending',
-              displayCountdownEndsAt: new Date(Date.now() + 10 * 60 * 1000),
-              autoCompleteAt: new Date(Date.now() + Math.floor(Math.random() * (10 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000),
-              type: 'sell',
-              note: 'BotOrder',
-              createdAt: now
-            });
-            // Simulate instant completion for automation
-            user.spotBalance -= order.spotAmount;
-            user.usdtBalance += order.usdtAmount;
-            profit += (order.price * order.spotAmount);
-          }
-        }
-      }
-      // Deduct bot commission and credit profit to FLEX balance if any
-      if (profit > 0) {
-        const botPercent = user.botPercent ?? 4;
-        const commission = (profit * botPercent) / 100;
-        const netProfit = profit - commission;
-        if (netProfit > 0) {
-          await creditFlexProfit(user, netProfit);
-        }
-      } else {
-        await user.save();
-      }
-      user.botLastRun = now;
+    // Find all active bots with userId in settings
+    const bots = await Bot.find({ isActive: true });
+    for (const bot of bots) {
+      const { userId, vipLevel } = bot.settings || {};
+      if (!userId) continue;
+      const user = await User.findById(userId);
+      if (!user || !user.botEnabled) continue;
+      const usdtBalance = user.usdtBalance || 0;
+      // Only place order if within bot's trade limit
+      if (usdtBalance < bot.tradeLimit) continue;
+      // Find a matching online buyer (trader) within trade limit
+      const buyer = await BuyerModel.findOne({
+        status: 'online',
+        vipLevel: vipLevel || user.vipLevel,
+        minLimit: { $lte: usdtBalance },
+        maxLimit: { $gte: usdtBalance },
+      });
+      if (!buyer) continue;
+      // Place buy order
+      const price = buyer.price;
+      const spotAmount = usdtBalance / price;
+      const order = await Order.create({
+        userId: user._id,
+        buyerId: buyer.userId,
+        buyerUsername: buyer.username,
+        price,
+        spotAmount,
+        usdtAmount: usdtBalance,
+        status: 'pending',
+        displayCountdownEndsAt: new Date(Date.now() + 10 * 60 * 1000),
+        autoCompleteAt: new Date(Date.now() + Math.floor(Math.random() * (10 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000),
+        type: 'buy',
+        note: 'BotOrder',
+        createdAt: new Date(),
+      });
+      // Update user balances
+      user.usdtBalance -= order.usdtAmount;
+      user.spotBalance += order.spotAmount;
       await user.save();
     }
-    console.log('[Bot Cron] Automated bot trading completed');
+    console.log('[Bot Cron] Daily bot buy orders placed');
   } catch (err) {
-    console.error('[Bot Cron] Error:', err);
+    console.error('[Bot Cron] Error placing daily bot buy orders:', err);
   }
 });
 

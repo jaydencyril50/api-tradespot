@@ -97,59 +97,6 @@ async function creditFlexProfit(user, profit) {
   await user.save();
 }
 
-// ...existing code...
-
-import Bot from './models/Bot';
-
-// --- CRON JOB: Place daily buy order for users with enabled bots ---
-cron.schedule('0 9 * * *', async () => {
-  try {
-    // Find all active bots with userId in settings
-    const bots = await Bot.find({ isActive: true });
-    for (const bot of bots) {
-      const { userId, vipLevel } = bot.settings || {};
-      if (!userId) continue;
-      const user = await User.findById(userId);
-      if (!user || !user.botEnabled) continue;
-      const usdtBalance = user.usdtBalance || 0;
-      // Only place order if within bot's trade limit
-      if (usdtBalance < bot.tradeLimit) continue;
-      // Find a matching online buyer (trader) within trade limit
-      const buyer = await BuyerModel.findOne({
-        status: 'online',
-        vipLevel: vipLevel || user.vipLevel,
-        minLimit: { $lte: usdtBalance },
-        maxLimit: { $gte: usdtBalance },
-      });
-      if (!buyer) continue;
-      // Place buy order
-      const price = buyer.price;
-      const spotAmount = usdtBalance / price;
-      const order = await Order.create({
-        userId: user._id,
-        buyerId: buyer.userId,
-        buyerUsername: buyer.username,
-        price,
-        spotAmount,
-        usdtAmount: usdtBalance,
-        status: 'pending',
-        displayCountdownEndsAt: new Date(Date.now() + 10 * 60 * 1000),
-        autoCompleteAt: new Date(Date.now() + Math.floor(Math.random() * (10 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000),
-        type: 'buy',
-        note: 'BotOrder',
-        createdAt: new Date(),
-      });
-      // Update user balances
-      user.usdtBalance -= order.usdtAmount;
-      user.spotBalance += order.spotAmount;
-      await user.save();
-    }
-    console.log('[Bot Cron] Daily bot buy orders placed');
-  } catch (err) {
-    console.error('[Bot Cron] Error placing daily bot buy orders:', err);
-  }
-});
-
 // Helper to generate new random limits (same logic as your generation)
 function getRandomLimits() {
   const minLimitBuckets = [

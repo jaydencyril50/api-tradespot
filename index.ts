@@ -52,7 +52,6 @@ import { asyncHandler, logActivity, ActivityType } from './utils/utility';
 import { healthCheckHandler, notFoundHandler } from './utils/handlers';
 import webauthnSettingsRouter from './routes/webauthnSettings';
 const flexDropLinkRouter = require('./routes/flexDropLink'); 
-import botRouter from './routes/bot';
 
 const app = express();
 
@@ -161,7 +160,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/webauthn-settings', webauthnSettingsRouter);
 app.use('/api/flex-drop', flexDropLinkRouter);
 app.use('/api/reward', rewardRouter);
-app.use('/api/bot', botRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

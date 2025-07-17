@@ -16,6 +16,7 @@ async function getOnlineBuyTraders(vipLevel: number) {
   // Map to expected format
   return buyers.map(buyer => ({
     _id: buyer._id,
+    userId: buyer.userId, // Add userId for type safety
     tradeLimit: { min: buyer.minLimit, max: buyer.maxLimit },
     vipLevel: buyer.vipLevel,
     username: buyer.username,
@@ -77,7 +78,7 @@ export default async function autoBuyOrdersCron() {
       await createBuyOrder({
         userId: user._id,
         botId: bot._id,
-        buyerId: trader._id, // Use _id from trader
+        buyerId: trader.userId, // Use userId from trader (matches BuyerModel.userId)
         buyerUsername: trader.username,
         price,
         spotAmount,

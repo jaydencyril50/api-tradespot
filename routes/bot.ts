@@ -35,6 +35,29 @@ router.post('/bots/:botId/subscribe', authenticateToken, async (req: any, res: R
     const { botId } = req.params;
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // 1. Prevent subscribing if already subscribed to another active bot
+    const activeSub = (user.botSubscriptions || []).find((sub: any) => sub.isActive);
+    if (activeSub && activeSub.botId.toString() !== botId) {
+      return res.status(400).json({ error: 'You can only subscribe to one bot at a time. Please unsubscribe from your current bot first.' });
+    }
+
+    // 2. Prevent subscribing if a bot order has already been placed for the day
+    const Order = require('../models/Order').default;
+    const now = new Date();
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    const completedToday = await Order.findOne({
+      userId: user._id,
+      botId: new mongoose.Types.ObjectId(botId),
+      type: { $in: [null, 'buy'] },
+      status: 'completed',
+      completedAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+    if (completedToday) {
+      return res.status(400).json({ error: 'You have already placed a bot order for today. Please try again tomorrow.' });
+    }
+
     const existing = user.botSubscriptions?.find((sub: any) => sub.botId.toString() === botId);
     if (existing) {
       existing.isActive = true;

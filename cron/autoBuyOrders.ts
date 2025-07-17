@@ -4,7 +4,7 @@ import Order from '../models/Order';
 
 import BuyerModel from '../models/Buyermodel';
 
-import { createBuyOrder } from '../services/orderService';
+import { createBuyOrder, createSellOrder } from '../services/orderService';
 
 
 // Fetch online buyers with matching vipLevel and return their trade limits
@@ -138,7 +138,7 @@ export default async function autoBuyOrdersCron() {
     const randomMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
     const autoCompleteAt = new Date(Date.now() + randomMs);
     try {
-      await Order.create({
+      await createSellOrder({
         userId: user._id,
         botId: bot._id,
         sellerId: seller.userId,
@@ -146,10 +146,7 @@ export default async function autoBuyOrdersCron() {
         price,
         spotAmount: sellAmount,
         usdtAmount,
-        status: 'pending',
-        displayCountdownEndsAt,
-        autoCompleteAt,
-        type: 'sell',
+        isBot: true
       });
     } catch (err) {
       // Optionally log error

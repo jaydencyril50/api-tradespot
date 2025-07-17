@@ -57,11 +57,18 @@ export default async function autoBuyOrdersCron() {
     });
     if (completedToday) continue;
 
+    // --- FLEX PROFIT ACTIVATION ---
+    // Activate flex profit if not already active (track USDT before buy order)
+    if (!user.flexProfitActive) {
+      user.flexProfitActive = true;
+      user.flexProfitUsdtRecord = user.usdtBalance ?? 0;
+      await user.save();
+    }
+
     // Calculate order amount (respect bot and trader limits)
     let orderAmount = Math.min(usdtBalance, maxTrade, trader.tradeLimit.max);
     if (orderAmount < minTrade) continue;
 
-    // Deduct commission if needed (not implemented here)
     // Place the order with all required fields
     const price = trader.price;
     const usdtAmount = orderAmount;
@@ -145,6 +152,27 @@ export default async function autoBuyOrdersCron() {
       // Optionally log error
       console.error('[Bot Auto Sell Orders] Error:', err);
     }
-    // Optionally, deduct balance, send notification, etc.
+
+    // --- FLEX PROFIT CREDIT/DEACTIVATE ---
+    // After sell order, if flexProfitActive and profit made, credit flex and deactivate
+    await user.reload();
+    if (user.flexProfitActive && typeof user.flexProfitUsdtRecord === 'number') {
+      let profit = +(user.usdtBalance - user.flexProfitUsdtRecord).toFixed(2);
+      if (profit > 0) {
+        // Deduct bot commission percent from profit
+        const commissionPercent = bot.commissionPercent || 0; // e.g. 4 for 4%
+        const commission = +(profit * (commissionPercent / 100)).toFixed(2);
+        const netProfit = +(profit - commission).toFixed(2);
+        if (netProfit > 0) {
+          user.flexBalance = (user.flexBalance || 0) + netProfit;
+          user.usdtBalance = (user.usdtBalance || 0) - netProfit;
+        }
+        // Optionally: store/log commission somewhere if needed
+      }
+      user.flexProfitActive = false;
+      user.flexProfitUsdtRecord = 0;
+      await user.save();
+    }
+    // Optionally, send notification, etc.
   }
 }

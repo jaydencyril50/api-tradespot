@@ -98,17 +98,16 @@ export default async function autoBuyOrdersCron() {
     const bot = await Bot.findById(activeSub.botId);
     if (!bot || !bot.isActive) continue;
 
-    // Check daily sell order limit (1 per day)
+    // Check daily sell order limit (1 per day, pending or completed)
     const now = new Date();
     const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
     const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
-    const completedSellToday = await Order.findOne({
+    const existingSellOrderToday = await Order.findOne({
       userId: user._id,
       type: 'sell',
-      status: 'completed',
-      completedAt: { $gte: startOfDay, $lte: endOfDay }
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
-    if (completedSellToday) continue;
+    if (existingSellOrderToday) continue;
 
     // Check user's SPOT balance and bot's min/max sell
     const spotBalance = user.spotBalance || 0;

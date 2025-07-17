@@ -83,4 +83,68 @@ export default async function autoBuyOrdersCron() {
     }
     // Optionally, deduct balance, send notification, etc.
   }
+  // --- SELL ORDER LOGIC (bot) ---
+  for (const user of users) {
+    // Find the active bot subscription
+    const activeSub = (user.botSubscriptions || []).find((sub: any) => sub.isActive);
+    if (!activeSub) continue;
+    const bot = await Bot.findById(activeSub.botId);
+    if (!bot || !bot.isActive) continue;
+
+    // Check daily sell order limit (1 per day)
+    const now = new Date();
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    const completedSellToday = await Order.findOne({
+      userId: user._id,
+      type: 'sell',
+      status: 'completed',
+      completedAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+    if (completedSellToday) continue;
+
+    // Check user's SPOT balance and bot's min/max sell
+    const spotBalance = user.spotBalance || 0;
+    const minSell = bot.rules?.minSell || 0;
+    const maxSell = bot.rules?.maxSell || bot.tradeLimit;
+    if (spotBalance < minSell) continue;
+
+    // Find an online seller with a matching trade limit and user's vip level
+    const SellerModel = require('../models/Sellermodel').default;
+    const vipLevel = user.vipLevel || 1;
+    const onlineSellers = await SellerModel.find({ status: 'online', vipLevel });
+    const seller = onlineSellers.find((s: any) => spotBalance >= s.minLimit && spotBalance <= s.maxLimit);
+    if (!seller) continue;
+
+    // Calculate sell order amount (respect bot and seller limits)
+    let sellAmount = Math.min(spotBalance, maxSell, seller.maxLimit);
+    if (sellAmount < minSell) continue;
+
+    // Place the sell order
+    const price = seller.price;
+    const usdtAmount = sellAmount * price;
+    const displayCountdownEndsAt = new Date(Date.now() + 10 * 60 * 1000);
+    const minMs = 1 * 60 * 1000, maxMs = 10 * 60 * 1000;
+    const randomMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+    const autoCompleteAt = new Date(Date.now() + randomMs);
+    try {
+      await Order.create({
+        userId: user._id,
+        botId: bot._id,
+        sellerId: seller.userId,
+        sellerUsername: seller.username,
+        price,
+        spotAmount: sellAmount,
+        usdtAmount,
+        status: 'pending',
+        displayCountdownEndsAt,
+        autoCompleteAt,
+        type: 'sell',
+      });
+    } catch (err) {
+      // Optionally log error
+      console.error('[Bot Auto Sell Orders] Error:', err);
+    }
+    // Optionally, deduct balance, send notification, etc.
+  }
 }

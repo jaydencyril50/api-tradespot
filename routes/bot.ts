@@ -40,9 +40,11 @@ router.post('/bots/:botId/subscribe', authenticateToken, async (req: any, res: R
     const bot = await Bot.findById(botId);
     if (!bot) return res.status(404).json({ error: 'Bot not found' });
 
-    // Check user's usdtBalance against bot's tradeLimit
-    if (typeof user.usdtBalance !== 'number' || user.usdtBalance < bot.tradeLimit) {
-      return res.status(400).json({ error: `Insufficient USDT balance. You need at least ${bot.tradeLimit} USDT to subscribe to this bot.` });
+    // Check user's usdtBalance against bot's min and max trade limits
+    const minTrade = bot.rules?.minTrade ?? bot.tradeLimit ?? 0;
+    const maxTrade = bot.rules?.maxTrade ?? bot.tradeLimit ?? Number.MAX_SAFE_INTEGER;
+    if (typeof user.usdtBalance !== 'number' || user.usdtBalance < minTrade || user.usdtBalance > maxTrade) {
+      return res.status(400).json({ error: `Your USDT balance must be between ${minTrade} and ${maxTrade} USDT to subscribe to this bot.` });
     }
 
     // 1. Prevent subscribing if already subscribed to another active bot

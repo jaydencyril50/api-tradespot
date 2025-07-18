@@ -54,9 +54,13 @@ export default async function autoBuyOrdersCron() {
       userId: user._id,
       botId: bot._id,
       type: 'buy',
-      createdAt: { $gte: startOfDay, $lte: endOfDay }
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ['pending', 'completed'] }
     });
-    if (existingBuyOrderToday) continue;
+    if (existingBuyOrderToday) {
+      // User already has a buy order today, skip
+      continue;
+    }
 
     // --- FLEX PROFIT ACTIVATION ---
     // Activate flex profit if not already active (track USDT before buy order)

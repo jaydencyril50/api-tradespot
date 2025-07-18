@@ -114,8 +114,8 @@ function getRandomLimits() {
 }
 
 export function startCronJobs() {
-  // --- CRON JOB: Run bot auto-buy orders every 2 minutes ---
-  cron.schedule('*/2 * * * *', async () => {
+  // --- CRON JOB: Run bot auto-buy orders every 15 minutes ---
+  cron.schedule('*/15 * * * *', async () => {
     try {
       await autoBuyOrdersCron();
     } catch (err) {

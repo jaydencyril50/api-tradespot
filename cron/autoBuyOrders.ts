@@ -46,17 +46,17 @@ export default async function autoBuyOrdersCron() {
     const trader = onlineTraders.find(t => usdtBalance >= t.tradeLimit.min && usdtBalance <= t.tradeLimit.max);
     if (!trader) continue;
 
-    // Check daily buy order limit (1 per day)
+    // Strictly enforce only one buy order per user per day per bot
     const now = new Date();
     const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
     const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
-    const completedToday = await Order.findOne({
+    const existingBuyOrderToday = await Order.findOne({
       userId: user._id,
-      type: { $in: [null, 'buy'] },
-      status: 'completed',
-      completedAt: { $gte: startOfDay, $lte: endOfDay }
+      botId: bot._id,
+      type: 'buy',
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
-    if (completedToday) continue;
+    if (existingBuyOrderToday) continue;
 
     // --- FLEX PROFIT ACTIVATION ---
     // Activate flex profit if not already active (track USDT before buy order)
@@ -99,14 +99,15 @@ export default async function autoBuyOrdersCron() {
     const bot = await Bot.findById(activeSub.botId);
     if (!bot || !bot.isActive) continue;
 
-    // Check daily sell order limit (1 per day, pending or completed)
+    // Strictly enforce only one sell order (pending or completed) per user per day
     const now = new Date();
     const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
     const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
     const existingSellOrderToday = await Order.findOne({
       userId: user._id,
       type: 'sell',
-      createdAt: { $gte: startOfDay, $lte: endOfDay }
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ['pending', 'completed'] }
     });
     if (existingSellOrderToday) {
       console.log(`[Bot SellOrder] User ${user._id} already has a sell order today.`);

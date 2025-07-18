@@ -269,29 +269,28 @@ router.post('/send-password-verification', authenticateToken, async (req: Reques
 
 router.post('/change-password', authenticateToken, async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
-    const { newPassword, code, spotid } = req.body;
+    const { oldPassword, newPassword, confirmPassword } = req.body;
     const user = await User.findById(userId);
     if (!user || typeof user.email !== 'string') {
         res.status(404).json({ error: 'User not found' });
         return;
     }
-    if (!newPassword || !code || !spotid) {
-        res.status(400).json({ error: 'newPassword, code, and spotid are required' });
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        res.status(400).json({ error: 'Old password, new password, and confirm password are required.' });
         return;
     }
-    if (user.spotid !== spotid) {
-        res.status(400).json({ error: 'Invalid spotid' });
+    if (!(await bcrypt.compare(oldPassword, user.password))) {
+        res.status(400).json({ error: 'Old password is incorrect.' });
         return;
     }
-    if (!verifyCode('passwordChangeCodes', user.email, code)) {
-        res.status(400).json({ error: 'Invalid or expired verification code' });
+    if (newPassword !== confirmPassword) {
+        res.status(400).json({ error: 'New passwords do not match.' });
         return;
     }
     try {
         const hash = await bcrypt.hash(newPassword, 10);
         user.password = hash;
         await user.save();
-        deleteCode('passwordChangeCodes', user.email);
         res.json({ message: 'Password updated successfully' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to update password' });

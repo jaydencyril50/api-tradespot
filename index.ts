@@ -21,6 +21,7 @@ import Activity from './models/Activity';
 import DepositSession from './models/DepositSession';
 import Trash from './models/Trash';
 import trashRoutes from './routes/trash';
+import faqRouter from './routes/faq';
 import User from './models/User';
 import teamRouter from './routes/team';
 import checkEmailRouter from './routes/checkEmail';
@@ -167,6 +168,9 @@ app.use('/api/reward', rewardRouter);
 
 // Mount bot routes
 app.use('/api/bot', botRouter);
+
+// Mount FAQ routes
+app.use('/api/faq', faqRouter);
 
 // --- SOCKET.IO SETUP ---
 const server = http.createServer(app);

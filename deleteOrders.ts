@@ -10,4 +10,4 @@ async function deleteOrdersByUserId(userId: string) {
   await mongoose.disconnect();
 }
 
-deleteOrdersByUserId('684705a30404daa7974e6383');
+deleteOrdersByUserId('68705d49566dea91499838df');

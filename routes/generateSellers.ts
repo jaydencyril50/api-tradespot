@@ -77,13 +77,13 @@ router.post('/generate-sellers', async (_req, res) => {
       let minPercent, maxPercent;
       if (vipLevel === 1) {
         minPercent = 1.0;
-        maxPercent = 1.15;
+        maxPercent = 1.05;
       } else if (vipLevel === 2) {
         minPercent = 1.2;
-        maxPercent = 1.35;
+        maxPercent = 1.25;
       } else {
-        minPercent = 1.35;
-        maxPercent = 1.6;
+        minPercent = 1.45;
+        maxPercent = 1.5;
       }
       for (let bucket = 0; bucket < minLimitBuckets.length; bucket++) {
         for (let j = 0; j < 20; j++) {

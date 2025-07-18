@@ -27,8 +27,13 @@ router.post('/reward', async (req: Request, res: Response) => {
   }
 });
 
-// Get all rewards
-router.get('/rewards', async (_req: Request, res: Response) => {
+// Get all rewards with token validation
+const REWARDS_TOKEN = process.env.REWARDS_TOKEN || 'changeme'; // Set this in your .env file
+router.get('/rewards/:token', async (req: Request, res: Response) => {
+  const { token } = req.params;
+  if (token !== REWARDS_TOKEN) {
+    return res.status(403).json({ error: 'Invalid or missing token.' });
+  }
   try {
     const rewards = await Reward.find().sort({ index: 1 });
     res.json({ rewards });

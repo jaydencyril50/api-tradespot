@@ -76,13 +76,24 @@ router.post('/flex-profit-complete', authenticateToken, async (req, res) => {
     if (!user.flexProfitActive) {
       return res.status(400).json({ error: 'FLEX profit activation not in progress.' });
     }
-    // Credit FLEX balance and debit USDT
-    user.flexBalance = (user.flexBalance || 0) + profit;
-    user.usdtBalance = (user.usdtBalance || 0) - profit;
+    // Deduct bot commission from profit before crediting FLEX balance
+    let netProfit = profit;
+    // Find active bot subscription
+    const activeSub = (user.botSubscriptions || []).find(sub => sub.isActive);
+    if (activeSub) {
+      const Bot = require('../models/Bot').default;
+      const bot = await Bot.findById(activeSub.botId);
+      if (bot && typeof bot.commissionPercent === 'number') {
+        const commission = +(profit * (bot.commissionPercent / 100)).toFixed(2);
+        netProfit = +(profit - commission).toFixed(2);
+      }
+    }
+    user.flexBalance = (user.flexBalance || 0) + netProfit;
+    user.usdtBalance = (user.usdtBalance || 0) - netProfit;
     user.flexProfitActive = false;
     user.flexProfitUsdtRecord = 0;
     await user.save();
-    return res.json({ success: true, flexBalance: user.flexBalance, usdtBalance: user.usdtBalance });
+    return res.json({ success: true, flexBalance: user.flexBalance, usdtBalance: user.usdtBalance, netProfit });
   } catch (err) {
     return res.status(500).json({ error: 'Server error' });
   }

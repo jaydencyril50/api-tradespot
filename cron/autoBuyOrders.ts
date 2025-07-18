@@ -178,12 +178,14 @@ export default async function autoBuyOrdersCron() {
     }
 
     // --- FLEX PROFIT CREDIT/DEACTIVATE ---
-    // After sell order, if flexProfitActive and profit made, credit flex and deactivate
-    // Re-fetch user from DB to get latest balances
-    const freshUser = await User.findById(user._id);
-    if (!freshUser) continue;
-    user = freshUser;
-    if (user.flexProfitActive && typeof user.flexProfitUsdtRecord === 'number') {
+    // Only credit and deactivate flex profit after a completed sell order
+    const completedSellOrder = await Order.findOne({
+      userId: user._id,
+      type: 'sell',
+      status: 'completed',
+      completedAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+    if (completedSellOrder && user.flexProfitActive && typeof user.flexProfitUsdtRecord === 'number') {
       let profit = +(user.usdtBalance - user.flexProfitUsdtRecord).toFixed(2);
       if (profit > 0) {
         // Deduct bot commission percent from profit

@@ -163,14 +163,14 @@ export async function createBuyOrder({
       throw new Error(`Trader's trade limit is ${minTrade}-${maxTrade} USDT. Your order amount is not within this range.`);
     }
   }
-  const completedToday = await Order.findOne({
+  // Check for any buy order (pending or completed) for the user today
+  const orderToday = await Order.findOne({
     userId,
     type: { $in: [null, 'buy'] },
-    status: 'completed',
-    completedAt: { $gte: startOfDayUTC, $lte: endOfDayUTC }
+    createdAt: { $gte: startOfDayUTC, $lte: endOfDayUTC }
   });
-  if (completedToday) {
-    throw new Error('You can only complete 1 buy order per day (00:00 UTC - 23:59 UTC).');
+  if (orderToday) {
+    throw new Error('You can only attempt 1 buy order per day (00:00 UTC - 23:59 UTC).');
   }
   // Check user balance
   const user = await User.findById(userId);
